@@ -2,10 +2,12 @@ import os
 import argparse
 import pickle
 import time
+import subprocess
 import numpy as np
 import gymnasium as gym
 import importlib
-from stable_baselines3.common.callbacks import CheckpointCallback
+from stable_baselines3.common.callbacks import CheckpointCallback, CallbackList
+from domain_randomization_callback import DomainRandomizationCallback
 from stable_baselines3.common.utils import set_random_seed
 from algorithm_configs_online import get_algorithm_config
 import gc
@@ -61,9 +63,31 @@ def parse_arguments():
     parser.add_argument('--angle_error', type=float, required=True, help='Angular error threshold in degrees')
     return parser.parse_args()
 
+def start_ambf():
+    launch_file_path = os.path.expanduser('~/surgical_robotics_challenge/launch.yaml')
+    ambf_simulator = os.path.expanduser("~/ambf/bin/lin-x86_64/ambf_simulator")
+
+    command = [
+        ambf_simulator,
+        '--launch_file', launch_file_path,
+        '-l', '0,1,3,4,13,14',
+        '-p', '200',
+        '-t', '1',
+        '--override_max_comm_freq', '120',
+        '--override_min_comm_freq', '120'
+    ]
+
+    ambf = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    time.sleep(40)
+    print("AMBF started")
+    return ambf
+
 def main():
+    
     args = parse_arguments()
     set_random_seed(args.seed)
+    
+    ambf = start_ambf()
     
     # Setup the environment
     env, step_size, threshold, max_episode_steps = setup_environment(args)
@@ -81,8 +105,12 @@ def main():
         name_prefix="rl_model"
     )
     
+    domain_randomization_callback = DomainRandomizationCallback(model, ambf)
+    
+    callback_list = CallbackList([checkpoint_callback, domain_randomization_callback])
+    
     # Train the model
-    model.learn(total_timesteps=args.total_timesteps, progress_bar=True, callback=checkpoint_callback, reset_num_timesteps=False)
+    model.learn(total_timesteps=args.total_timesteps, progress_bar=True, callback=callback_list, reset_num_timesteps=False)
     
     # Save the final model
     save_path = f"{Base_directory}/{args.task_name}/{args.algorithm}/{args.reward_type}/seed_{args.seed}/final_model"
