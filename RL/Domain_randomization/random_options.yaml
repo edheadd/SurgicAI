@@ -1,0 +1,11 @@
+world configs:
+  - ADF/world/world_stereo_varylight.yaml
+
+PSM1 configs:
+  - ADF/psm1.yaml
+
+PSM2 configs:
+  - ADF/psm2.yaml
+
+phantom configs:
+  - ADF/phantom_without_thread_multiView.yaml

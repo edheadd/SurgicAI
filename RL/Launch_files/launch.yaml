@@ -1,0 +1,12 @@
+# This is the base file for Coordination Application
+# world config: ADF/world/world.yaml
+world config: ADF/world/world_stereo_varylight.yaml
+color config: ADF/color/colors.yaml
+input devices config: ADF/input_devices/input_devices.yaml
+multibody configs:
+  - "ADF/psm1.yaml" #0
+  - "ADF/psm2.yaml" #1
+  - "ADF/phantom_without_thread_multiView.yaml" #2
+  - "ADF/sensors_actuators_psm1.yaml" #3
+  - "ADF/sensors_actuators_psm2.yaml" #4
+  - "ADF/ghosts.yaml" #5
