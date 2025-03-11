@@ -13,9 +13,7 @@ class DomainRandomizationCallback(BaseCallback):
         self.headless_mode = headless_mode
         self.randomization_params = randomization_params
         self.randomizer = DomainRandomization(randomization_params)
-        self.ambf_simulator = os.path.expanduser("~/ambf/bin/lin-x86_64/ambf_simulator")
-        # self.launch_file_path = os.path.expanduser("~/SurgicAI/RL/Launch_files/launch.yaml")
-        
+        self.ambf_simulator = os.path.expanduser("~/ambf/bin/lin-x86_64/ambf_simulator")        
 
     def _on_rollout_start(self):
         self.ambf.terminate()

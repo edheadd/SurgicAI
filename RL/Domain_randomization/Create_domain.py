@@ -3,6 +3,8 @@ import random
 import os
 
 class DomainRandomization():
+    #TODO: INSTEAD OF GETTING NEW LAUNCH FILE AND RESTARTING, MOVE THINGS AROUND
+    
     def __init__(self, randomization_params):
         self.randomization_params = [True if x == "1" else False for x in randomization_params.split(",")]
         print("Randomization params: ", self.randomization_params)
@@ -26,14 +28,17 @@ class DomainRandomization():
         default_path = os.path.expanduser("~/SurgicAI/RL/Launch_files/launch.yaml")
         with open(default_path, 'r') as default_launch:
             launch_dict = yaml.safe_load(default_launch)
+            
+        output_name = ""
         
         launch_dict['world config'] = self.randomize_world()
-        launch_dict['multibody configs'] = self.randomize_PSMs(launch_dict['multibody configs'])
-        launch_dict['multibody configs'] = self.randomize_phantom(launch_dict['multibody configs'])
+        launch_dict['multibody configs'], output_name = self.randomize_PSMs(launch_dict['multibody configs'], output_name)
+        launch_dict['multibody configs'], output_name = self.randomize_phantom(launch_dict['multibody configs'], output_name)
         
+        output_name = output_name + ".yaml"
         
-        #TODO: generate unique path name based on random attributes
-        output_path = os.path.expanduser("~/SurgicAI/RL/Launch_files/result.yaml")
+        #TODO: generate unique path name based on random attributes (UNTESTED)
+        output_path = os.path.expanduser("~/SurgicAI/RL/Launch_files/" + output_name)
         with open(output_path, 'w') as yaml_file:
             yaml.dump(launch_dict, yaml_file, default_flow_style=False)
         
@@ -52,7 +57,9 @@ class DomainRandomization():
         return world_configs, psm1_configs, psm2_configs, phantom_configs
     
     def pick_random_option(self, config_name):
-        return random.choice(self.config_options[config_name])
+        picked_entry = random.choice(self.config_options[config_name])
+        name, config = list(picked_entry.items())[0]        
+        return name, config
     
     def randomize_world(self):
         #TODO: implement randomization for world, seperating lights and camera
@@ -60,27 +67,36 @@ class DomainRandomization():
         
         return 'ADF/world/world_stereo_varylight.yaml'
     
-    def randomize_PSMs(self, multibody_configs):
-            
+    def randomize_PSMs(self, multibody_configs, output_name):
+        
+        psm1_name = "defaultPSM1"
+        psm2_name = "defaultPSM2"
+        
         if self.PSM_randomization:
-            psm1_config = self.pick_random_option('psm1')
-            psm2_config = self.pick_random_option('psm2')         
+            psm1_name, psm1_config = self.pick_random_option('psm1')
+            psm2_name, psm2_config = self.pick_random_option('psm2')        
             
             multibody_configs[0] = psm1_config
             multibody_configs[1] = psm2_config
             
-        print("Set PSM1 config to ", multibody_configs[0])
-        print("Set PSM2 config to ", multibody_configs[1])
+        print("Set PSM1 config to ", psm1_name, " at ", multibody_configs[0])
+        print("Set PSM2 config to ", psm2_name, " at ", multibody_configs[1])
+        
+        output_name = output_name + "_" + psm1_name + "_" + psm2_name
                         
-        return multibody_configs
+        return multibody_configs, output_name
             
-    def randomize_phantom(self, multibody_configs):
+    def randomize_phantom(self, multibody_configs, output_name):
+        
+        phantom_name = "defaultPhantom"
         
         if self.phantom_randomization:
-            phantom_config = self.pick_random_option('phantom')
+            phantom_config, phantom_name = self.pick_random_option('phantom')
             multibody_configs[2] = phantom_config
         
-        print("Set phantom config to", multibody_configs[2])
+        print("Set phantom config to", phantom_name, " at ", multibody_configs[2])
         
-        return multibody_configs
+        output_name = output_name + "_" + phantom_name
+        
+        return multibody_configs, output_name
         
