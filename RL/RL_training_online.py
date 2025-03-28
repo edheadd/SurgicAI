@@ -1,8 +1,6 @@
 import os
 import argparse
 import pickle
-import time
-import subprocess
 import numpy as np
 import gymnasium as gym
 import importlib
@@ -61,39 +59,13 @@ def parse_arguments():
     parser.add_argument('--seed', type=int, default=10, help='Random seed')
     parser.add_argument('--trans_error', type=float, required=True, help='Translational error threshold')
     parser.add_argument('--angle_error', type=float, required=True, help='Angular error threshold in degrees')
-    parser.add_argument('--headless_mode', type=bool, default=False, help='Run in headless mode')
-    parser.add_argument('--randomization_params', type=str, default='0,0,0,0', help='Randomization parameters')
+    parser.add_argument('--randomization_params', type=str, default='0', help='Randomization parameters')
     return parser.parse_args()
-
-def start_ambf(headless_mode):
-    launch_file_path = os.path.expanduser('~/SurgicAI/RL/Launch_files/launch.yaml')
-    ambf_simulator = os.path.expanduser("~/ambf/bin/lin-x86_64/ambf_simulator")
-
-    command = [
-        ambf_simulator,
-        '--launch_file', launch_file_path,
-        '-l', '0,1,2,3,4,5',
-        '-p', '200',
-        '-t', '1',
-        '--override_max_comm_freq', '120',
-        '--override_min_comm_freq', '120'
-    ]
-
-    if headless_mode:
-        command.append('-g')
-        command.append('0')
-
-    ambf = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    time.sleep(25)
-    print("AMBF started")
-    return ambf
 
 def main():
     
     args = parse_arguments()
     set_random_seed(args.seed)
-    
-    ambf = start_ambf(args.headless_mode)
     
     # Setup the environment
     env, step_size, threshold, max_episode_steps = setup_environment(args)
@@ -111,7 +83,7 @@ def main():
         name_prefix="rl_model"
     )
     
-    domain_randomization_callback = DomainRandomizationCallback(model, ambf, args.headless_mode, args.randomization_params)
+    domain_randomization_callback = DomainRandomizationCallback(model, args.randomization_params)
     
     callback_list = CallbackList([checkpoint_callback, domain_randomization_callback])
     
