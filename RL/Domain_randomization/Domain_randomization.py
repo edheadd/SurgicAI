@@ -46,9 +46,9 @@ class DomainRandomization():
         # create a frame that points at the position
         
         if randomize:
-            xrand = np.random.uniform(-0.01, 0.01)
-            yrand = np.random.uniform(-0.01, 0.01)
-            zrand = np.random.uniform(-0.05, -0.03)
+            xrand = np.random.uniform(-0.005, 0.005)
+            yrand = np.random.uniform(-0.005, 0.005)
+            zrand = np.random.uniform(-0.05, -0.04)
             
             L_goal_pos = Vector(xrand-0.002, yrand, zrand)
             L_goal_rpy = self.calculate_RPY(L_goal_pos)
@@ -58,12 +58,13 @@ class DomainRandomization():
             
             # TODO: add noise to camera rotation
             
-            print("Randomized camera positions: ", xrand, yrand, zrand)
+            
             
             L_goal = Frame(L_goal_rpy, L_goal_pos)
             R_goal = Frame(R_goal_rpy, R_goal_pos)
             self.cameraL.move_cp(L_goal)
             self.cameraR.move_cp(R_goal)
+            print("Randomized camera positions: ", xrand, yrand, zrand)
         
         else:
             print("Using default camera positions")
@@ -78,19 +79,17 @@ class DomainRandomization():
     def light_reset(self, randomize):
         
         if randomize:
-            # xrand = np.random.uniform(-0.1, 0.1)
-            # yrand = np.random.uniform(-0.1, 0.1)
-            # zrand = np.random.uniform(0.0, 0.2)
+            xrand = np.random.uniform(-0.1, 0.1)
+            yrand = np.random.uniform(-0.1, 0.1)
+            zrand = np.random.uniform(0.0, 0.2)
             
-            # print("Randomized light positions: ", xrand, yrand, zrand)
+            light_pos = Vector(xrand, yrand, zrand)
+            light_rpy = self.light.get_rpy()
             
-            # light_pos = Vector(xrand, yrand, zrand)
-            # light_rpy = self.light.get_rpy()
-            # light_rpy = Rotation.RPY(light_rpy[0], light_rpy[1], light_rpy[2])
+            light_goal = Frame(light_rpy, light_pos)
             
-            # light_goal = Frame(light_rpy, light_pos)
-            
-            # self.light.move_cp(light_goal)
+            self.light.move_cp(light_goal)
+            print("Randomized light positions: ", xrand, yrand, zrand)
             
             pass
             
