@@ -1,6 +1,7 @@
 from PyKDL import Vector, Rotation, Frame
 import numpy as np
 from surgical_robotics_challenge.camera import Camera
+from Domain_randomization.light import Light
 
 class DomainRandomization():
     
@@ -8,20 +9,21 @@ class DomainRandomization():
         self.randomization_params = [True if x == "1" else False for x in randomization_params.split(",")]
         print("Randomization params: ", self.randomization_params)
         self.camera_randomization = self.randomization_params[0]
-        self.psm_randomization = self.randomization_params[1]
-        self.light_randomization = self.randomization_params[2]
+        self.light_randomization = self.randomization_params[1]
+        self.psm_randomization = self.randomization_params[2]
         
         self.env = env.envs[0].unwrapped
         self.simulation_manager = self.env.simulation_manager
         
         
         self.cameraL = Camera(self.simulation_manager, "/ambf/env/cameras/cameraL")
-        self.cameraR = Camera(self.simulation_manager, "cameraR")
+        self.cameraR = Camera(self.simulation_manager, "/ambf/env/cameras/cameraR")
+        
+        self.light = Light(self.simulation_manager, "/ambf/env/lights/light2")
         
         self.psm1 = self.env.psm1
         self.psm2 = self.env.psm2
         
-        self.light = self.simulation_manager.get_obj_handle("/ambf/env/lights/light2")
               
         
     def randomize_environment(self):
@@ -30,11 +32,12 @@ class DomainRandomization():
         # RANDOMIZE CAMERA POSITION
         self.camera_view_reset(self.camera_randomization)
         
+        # RANDOMIZE LIGHT POSITION
+        self.light_reset(self.light_randomization)
+        
         # RANDOMIZE PSM POSITION
         self.psm_reset(self.psm_randomization)
         
-        # RANDOMIZE LIGHT POSITION
-        self.light_reset(self.light_randomization)
         
         return
     
@@ -43,9 +46,9 @@ class DomainRandomization():
         # create a frame that points at the position
         
         if randomize:
-            xrand = np.random.uniform(-0.03, 0.03)
-            yrand = np.random.uniform(-0.03, 0.03)
-            zrand = np.random.uniform(-0.05, 0.01)
+            xrand = np.random.uniform(-0.01, 0.01)
+            yrand = np.random.uniform(-0.01, 0.01)
+            zrand = np.random.uniform(-0.05, -0.03)
             
             L_goal_pos = Vector(xrand-0.002, yrand, zrand)
             L_goal_rpy = self.calculate_RPY(L_goal_pos)
@@ -53,7 +56,7 @@ class DomainRandomization():
             R_goal_pos = Vector(xrand+0.002, yrand, zrand)
             R_goal_rpy = self.calculate_RPY(R_goal_pos)
             
-            # add noise to camera rotation
+            # TODO: add noise to camera rotation
             
             print("Randomized camera positions: ", xrand, yrand, zrand)
             
@@ -69,13 +72,32 @@ class DomainRandomization():
         
         if randomize:
             pass
+        else:
+            print("Using default PSM positions")
         
     def light_reset(self, randomize):
         
         if randomize:
+            # xrand = np.random.uniform(-0.1, 0.1)
+            # yrand = np.random.uniform(-0.1, 0.1)
+            # zrand = np.random.uniform(0.0, 0.2)
+            
+            # print("Randomized light positions: ", xrand, yrand, zrand)
+            
+            # light_pos = Vector(xrand, yrand, zrand)
+            # light_rpy = self.light.get_rpy()
+            # light_rpy = Rotation.RPY(light_rpy[0], light_rpy[1], light_rpy[2])
+            
+            # light_goal = Frame(light_rpy, light_pos)
+            
+            # self.light.move_cp(light_goal)
+            
             pass
+            
+        else:
+            print("Using default light positions")
                
-    def calculate_RPY(from_pos):
+    def calculate_RPY(self, from_pos):
         look_at = Vector(0.0, 0.0, -1.0) 
         
         direction = np.array([
