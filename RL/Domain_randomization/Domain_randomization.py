@@ -57,9 +57,7 @@ class DomainRandomization():
             R_goal_rpy = self.calculate_RPY(R_goal_pos)
             
             # TODO: add noise to camera rotation
-            
-            
-            
+               
             L_goal = Frame(L_goal_rpy, L_goal_pos)
             R_goal = Frame(R_goal_rpy, R_goal_pos)
             self.cameraL.move_cp(L_goal)
@@ -72,7 +70,10 @@ class DomainRandomization():
     def psm_reset(self, randomize):
         
         if randomize:
-            pass
+            
+            # how to move them all at the same time?
+            
+             pass
         else:
             print("Using default PSM positions")
         
