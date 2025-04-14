@@ -37,6 +37,7 @@ class DomainRandomization():
         
         # RANDOMIZE PSM POSITION
         self.psm_reset(self.psm_randomization)
+        # jaw angle?
         
         
         return
@@ -71,7 +72,7 @@ class DomainRandomization():
         
         if randomize:
             
-            # how to move them all at the same time?
+            # use psm object move_cp?
             
              pass
         else:
