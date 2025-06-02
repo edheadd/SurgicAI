@@ -1,12 +1,14 @@
 from stable_baselines3.common.callbacks import BaseCallback
-from Domain_randomization.Domain_randomization import DomainRandomization
-import time
 
 class DomainRandomizationCallback(BaseCallback):
     def __init__(self, model, randomization_params, verbose=0):
         super().__init__(verbose)
         self.env = model.env
-        self.randomizer = DomainRandomization(self.env, randomization_params)
+        self.randomization_params = [True if x == "1" else False for x in randomization_params.split(",")]
+        print("Randomization params: ", self.randomization_params)
+        self.camera_randomization = self.randomization_params[0]
+        self.light_randomization = self.randomization_params[1]
+        self.psm_randomization = self.randomization_params[2]
 
     def _on_rollout_start(self):
         print("Randomizing AMBF (Rollout start)")
@@ -20,9 +22,7 @@ class DomainRandomizationCallback(BaseCallback):
         return True
     
     def randomize(self):
-        self.randomizer.randomize_environment()
-        time.sleep(2)
-        print("Randomized!")
+        return;
 
 
 
