@@ -1,7 +1,7 @@
 from stable_baselines3.common.callbacks import BaseCallback
 import rospy
 from ambf_msgs.msg import WorldCmd
-import numpy as np
+import random
 
 class DomainRandomizationCallback(BaseCallback):
     def __init__(self, randomization_params, verbose=0):
@@ -9,12 +9,12 @@ class DomainRandomizationCallback(BaseCallback):
         
         self.randomization_params = [True if x == "1" else False for x in randomization_params.split(",")]
         print("Randomization params: ", self.randomization_params)
-        self.randomize_gravity = self.randomization_params[0]
+        self.enable_gravity_randomization = self.randomization_params[0]
         
         self.pub = rospy.Publisher('/WorldRandomization/Commands/Command', WorldCmd, queue_size=10)
         
-        empty_msg = WorldCmd()
-        self.prevMsgs = [empty_msg]
+        self.prevMsg = WorldCmd()
+
 
     def _on_rollout_start(self):
         print("Randomizing AMBF (Rollout start)")
@@ -29,27 +29,27 @@ class DomainRandomizationCallback(BaseCallback):
     
     def randomize(self):
         
-        # Gravity command
         msg = WorldCmd()
-        msg.randomize_gravity = self.randomize_gravity
-        if self.randomize_gravity:
-            unique = False
-            while not unique:
-                msg.gravity.x = 0.0
-                msg.gravity.y = 0.0
-                msg.gravity.z = np.random.uniform(-10, -9.6)
-                #avoid same value as previous
-                unique = (msg.gravity.z != self.prevMsgs[0].gravity.z)
-        else:
-            msg.gravity.x = 0.0
-            msg.gravity.y = 0.0
-            msg.gravity.z = -9.8
-            
-        # Store the current message to avoid repeating the same randomization
-        self.prevMsgs[0] = msg
-            
+        
+        msg = self.randomize_gravity(msg, self.enable_gravity_randomization)
+                                
         self.pub.publish(msg)
+        self.prevMsg = msg
         print("Published randomization command")
+        
+        
+    def randomize_gravity(self, msg, randomize):
+        msg.randomize_gravity = randomize
+        msg.gravity.x = 0.0
+        msg.gravity.y = 0.0
+
+        if randomize:
+            msg.gravity.z = random.choice([-9.81, 0.0])
+
+        else:
+            msg.gravity.z = -9.81
+
+        return msg
 
 
 
