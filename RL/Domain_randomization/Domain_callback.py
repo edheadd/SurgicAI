@@ -10,6 +10,7 @@ class DomainRandomizationCallback(BaseCallback):
         self.randomization_params = [True if x == "1" else False for x in randomization_params.split(",")]
         print("Randomization params: ", self.randomization_params)
         self.enable_gravity_randomization = self.randomization_params[0]
+        self.enable_light_color_randomization = self.randomization_params[1]
         
         self.pub = rospy.Publisher('/WorldRandomization/Commands/Command', WorldCmd, queue_size=10)
         
@@ -32,6 +33,7 @@ class DomainRandomizationCallback(BaseCallback):
         msg = WorldCmd()
         
         msg = self.randomize_gravity(msg, self.enable_gravity_randomization)
+        msg = self.randomize_light_color(msg, self.enable_light_color_randomization)
                                 
         self.pub.publish(msg)
         self.prevMsg = msg
@@ -48,6 +50,19 @@ class DomainRandomizationCallback(BaseCallback):
 
         else:
             msg.gravity.z = -9.81
+
+        return msg
+    
+    def randomize_light_color(self, msg, randomize):
+        msg.randomize_light_color = randomize
+        if randomize:
+            msg.rgb.x = 0
+            msg.rgb.y = 1
+            msg.rgb.z = 0
+        else:
+            msg.rgb.x = 1
+            msg.rgb.y = 1
+            msg.rgb.z = 1
 
         return msg
 
