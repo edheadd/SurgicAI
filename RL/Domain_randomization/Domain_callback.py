@@ -19,12 +19,13 @@ class DomainRandomizationCallback(BaseCallback):
         self.msgID = 1;
 
     def _on_rollout_start(self):
-        print("Randomizing AMBF (Rollout start)")
-        self.randomize() 
+        if any(self.randomization_params):
+            print("Randomizing AMBF (Rollout start)")
+            self.randomize() 
 
     def _on_step(self):
         if "dones" in self.locals:
-            if any(self.locals["dones"]):
+            if any(self.locals["dones"]) and any(self.randomization_params):
                 print("Randomizing AMBF (Step complete)")
                 self.randomize()           
         return True
