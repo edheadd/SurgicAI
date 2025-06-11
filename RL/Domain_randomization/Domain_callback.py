@@ -16,8 +16,7 @@ class DomainRandomizationCallback(BaseCallback):
         
         self.pub = rospy.Publisher('/WorldRandomization/Commands/Command', WorldCmd, queue_size=10)
         
-        self.prevMsg = WorldCmd()
-
+        self.msgID = 1;
 
     def _on_rollout_start(self):
         print("Randomizing AMBF (Rollout start)")
@@ -34,12 +33,14 @@ class DomainRandomizationCallback(BaseCallback):
         
         msg = WorldCmd()
         
+        msg.msgID = self.msgID
+        self.msgID += 1
+        
         msg = self.randomize_gravity(msg, self.gravity_randomization)
         msg = self.randomize_light_num(msg, self.light_num_randomization)
         msg = self.randomize_light_color(msg, self.light_color_randomization)
                                 
         self.pub.publish(msg)
-        self.prevMsg = msg
         print("Published randomization command")
         
         
