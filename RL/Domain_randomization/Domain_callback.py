@@ -1,6 +1,6 @@
 from stable_baselines3.common.callbacks import BaseCallback
 import rospy
-from ambf_msgs.msg import WorldCmd
+from world_randomization_msgs.msg import Gravity, LightColor, LightNum
 import random
 
 class DomainRandomizationCallback(BaseCallback):
@@ -14,72 +14,52 @@ class DomainRandomizationCallback(BaseCallback):
         self.light_num_randomization = self.randomization_params[1]
         self.light_color_randomization = self.randomization_params[2]
         
-        self.pub = rospy.Publisher('/WorldRandomization/Commands/Command', WorldCmd, queue_size=10)
-        
-        self.msgID = 1;
+        self.gravity_pub = rospy.Publisher('/ambf/env/World/my_plugin_name/enable', Gravity, queue_size=1)
+        self.light_num_pub = rospy.Publisher('/ambf/env/World/my_plugin_name/light_direction', LightNum, queue_size=1)
+        self.light_color_pub = rospy.Publisher('/ambf/env/World/my_plugin_name/light_color', LightColor, queue_size=1)
+
 
     def _on_rollout_start(self):
         if any(self.randomization_params):
-            print("Randomizing AMBF (Rollout start)")
+            print("Randomizing")
             self.randomize() 
 
     def _on_step(self):
         if "dones" in self.locals:
             if any(self.locals["dones"]) and any(self.randomization_params):
-                print("Randomizing AMBF (Step complete)")
+                print("Randomizing")
                 self.randomize()           
         return True
     
     def randomize(self):
         
-        msg = WorldCmd()
+        if self.gravity_randomization:
+            self.randomize_gravity()
         
-        msg.msgID = self.msgID
-        self.msgID += 1
+        if self.light_num_randomization:
+            self.randomize_light_num()
         
-        msg = self.randomize_gravity(msg, self.gravity_randomization)
-        msg = self.randomize_light_num(msg, self.light_num_randomization)
-        msg = self.randomize_light_color(msg, self.light_color_randomization)
-                                
-        self.pub.publish(msg)
-        print("Published randomization command")
+        if self.light_color_randomization:
+            self.randomize_light_color()
         
         
-    def randomize_gravity(self, msg, randomize):
-        msg.randomize_gravity = randomize
+    def randomize_gravity(self):
+        msg = Gravity()
         msg.gravity.x = 0.0
         msg.gravity.y = 0.0
-
-        if randomize:
-            msg.gravity.z = random.choice([-9.81, 0.0])
-
-        else:
-            msg.gravity.z = -9.81
-
-        return msg
+        msg.gravity.z = random.choice([-9.81, 0.0])
+        self.gravity_pub.publish(msg)
     
     
-    def randomize_light_num(self, msg, randomize):
-        msg.randomize_light_num = randomize
-        if randomize:
-            msg.num_lights = random.randint(0, 3)
-        else:
-            msg.num_lights = 0
+    def randomize_light_num(self):
+        msg = LightNum()
+        msg.num_lights = random.randint(0, 3)
+        self.light_num_pub.publish(msg)
 
-        return msg
     
-    def randomize_light_color(self, msg, randomize):
-        msg.randomize_light_color = randomize
-        if randomize:
-            msg.rgb.x = random.uniform(0, 1)
-            msg.rgb.y = random.uniform(0, 1)
-            msg.rgb.z = random.uniform(0, 1)
-        else:
-            msg.rgb.x = 1
-            msg.rgb.y = 1
-            msg.rgb.z = 1
-
-        return msg
-
-
-
+    def randomize_light_color(self):
+        msg = LightColor()
+        msg.rgb.x = random.uniform(0, 1)
+        msg.rgb.y = random.uniform(0, 1)
+        msg.rgb.z = random.uniform(0, 1)
+        self.light_color_pub.publish(msg)
