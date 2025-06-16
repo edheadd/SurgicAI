@@ -10,7 +10,7 @@ import torch
 
 gc.collect()
 torch.cuda.empty_cache()
-Base_directory = "/home/jwu220/Trajectory_cloud/RL_new"
+Base_directory = "/home/exie/SurgicAI/RL"
 
 def setup_environment(args):
     max_episode_steps = 300

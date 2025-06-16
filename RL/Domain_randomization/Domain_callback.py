@@ -7,6 +7,9 @@ class DomainRandomizationCallback(BaseCallback):
     def __init__(self, randomization_params, verbose=0):
         super().__init__(verbose)
         
+        if not rospy.core.is_initialized():
+            rospy.init_node('domain_randomization_callback', anonymous=True, disable_signals=True)
+        
         self.randomization_params = [True if x == "1" else False for x in randomization_params.split(",")]
         print("Randomization params: ", self.randomization_params)
         
@@ -14,10 +17,12 @@ class DomainRandomizationCallback(BaseCallback):
         self.light_num_randomization = self.randomization_params[1]
         self.light_color_randomization = self.randomization_params[2]
         
-        self.gravity_pub = rospy.Publisher('/ambf/env/World/my_plugin_name/enable', Gravity, queue_size=1)
-        self.light_num_pub = rospy.Publisher('/ambf/env/World/my_plugin_name/light_direction', LightNum, queue_size=1)
-        self.light_color_pub = rospy.Publisher('/ambf/env/World/my_plugin_name/light_color', LightColor, queue_size=1)
+        self.gravity_pub = rospy.Publisher('/ambf/env/World/world_randomization/gravity', Gravity, queue_size=1)
+        self.light_num_pub = rospy.Publisher('/ambf/env/World/world_randomization/light_num', LightNum, queue_size=1)
+        self.light_color_pub = rospy.Publisher('/ambf/env/World/world_randomization/light_color', LightColor, queue_size=1)
 
+        # Wait for publishers to register
+        rospy.sleep(1.0)
 
     def _on_rollout_start(self):
         if any(self.randomization_params):
