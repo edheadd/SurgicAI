@@ -17,9 +17,9 @@ class DomainRandomizationCallback(BaseCallback):
         self.light_num_randomization = self.randomization_params[1]
         self.light_color_randomization = self.randomization_params[2]
         
-        self.gravity_pub = rospy.Publisher('/ambf/env/World/world_randomization/gravity', Gravity, queue_size=1)
-        self.light_num_pub = rospy.Publisher('/ambf/env/World/world_randomization/light_num', LightNum, queue_size=1)
-        self.light_color_pub = rospy.Publisher('/ambf/env/World/world_randomization/light_color', LightColor, queue_size=1)
+        self.gravity_pub = rospy.Publisher('/ambf/env/world_randomization/gravity', Gravity, queue_size=1)
+        self.light_num_pub = rospy.Publisher('/ambf/env/world_randomization/light_num', LightNum, queue_size=1)
+        self.light_color_pub = rospy.Publisher('/ambf/env/world_randomization/light_color', LightColor, queue_size=1)
 
         # Wait for publishers to register
         rospy.sleep(1.0)
@@ -53,6 +53,7 @@ class DomainRandomizationCallback(BaseCallback):
         msg.gravity.x = 0.0
         msg.gravity.y = 0.0
         msg.gravity.z = random.choice([-9.81, 0.0])
+        print("Randomized gravity: ", msg.gravity.z)
         self.gravity_pub.publish(msg)
     
     
@@ -67,4 +68,5 @@ class DomainRandomizationCallback(BaseCallback):
         msg.rgb.x = random.uniform(0, 1)
         msg.rgb.y = random.uniform(0, 1)
         msg.rgb.z = random.uniform(0, 1)
+        msg.rgb.a = 1
         self.light_color_pub.publish(msg)
