@@ -1,7 +1,7 @@
 from stable_baselines3.common.callbacks import BaseCallback
 import rospy
-from world_randomization_msgs.msg import Gravity, LightColor, LightNum
-from Domain_randomization.randomization_gui import ToggleApp
+from world_randomization_msgs.msg import Gravity, LightColor, LightNum, LightAttenuation
+from Domain_randomization.randomization_gui import GUI
 import random
 
 
@@ -17,12 +17,14 @@ class DomainRandomizationCallback(BaseCallback):
         self.gravity_randomization = self.randomization_params[0]
         self.light_num_randomization = self.randomization_params[1]
         self.light_color_randomization = self.randomization_params[2]
+        self.light_attenuation_randomization = self.randomization_params[3]
                         
-        self.name_list = ["gravity", "light_num", "light_color"]       
+        self.name_list = ["gravity", "light_num", "light_color", "light_attenuation"]       
         
         self.gravity_pub = rospy.Publisher('/ambf/env/world_randomization/gravity', Gravity, queue_size=1)
         self.light_num_pub = rospy.Publisher('/ambf/env/world_randomization/light_num', LightNum, queue_size=1)
         self.light_color_pub = rospy.Publisher('/ambf/env/world_randomization/light_color', LightColor, queue_size=1)
+        self.light_attenuation_pub = rospy.Publisher('/ambf/env/world_randomization/light_attenuation', LightAttenuation, queue_size=1)
 
         rospy.sleep(1.0)
 
@@ -40,18 +42,20 @@ class DomainRandomizationCallback(BaseCallback):
         self.gravity_randomization = self.randomization_params[0]
         self.light_num_randomization = self.randomization_params[1]
         self.light_color_randomization = self.randomization_params[2]
+        self.light_attenuation_randomization = self.randomization_params[3]
         
         self.randomize_gravity()
         self.randomize_light_num()
         self.randomize_light_color()
-            
+        self.randomize_light_attenuation()
+        
     def update_randomization_params(self, idx):
         self.randomization_params[idx] = not self.randomization_params[idx]
             
     from PyQt5.QtCore import QTimer
 
     def start_gui(self, app):
-            self.gui_window = ToggleApp(self)
+            self.gui_window = GUI(self)
             self.gui_window.show()
 
     def randomize_gravity(self):
@@ -75,4 +79,11 @@ class DomainRandomizationCallback(BaseCallback):
         msg.rgb.b = random.uniform(0, 1) if self.light_color_randomization else 1
         msg.rgb.a = 1
         self.light_color_pub.publish(msg)
+        
+    def randomize_light_attenuation(self):
+        msg = LightAttenuation()
+        msg.constant = random.uniform(0, 1) if self.light_attenuation_randomization else 0.0
+        msg.linear = random.uniform(0, 1) if self.light_attenuation_randomization else 0.0
+        msg.quadratic = random.uniform(0, 1) if self.light_attenuation_randomization else 0.0
+        self.light_attenuation_pub.publish(msg)
 

@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QGridLayout
 
-class ToggleApp(QWidget):
+class GUI(QWidget):
     def __init__(self, DomainRandomizationCallbackInstance):
         super().__init__()
         
