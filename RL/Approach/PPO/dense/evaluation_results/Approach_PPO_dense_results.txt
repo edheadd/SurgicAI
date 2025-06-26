@@ -1,0 +1,10 @@
+Task: Approach
+Algorithm: PPO
+Reward Type: dense
+Number of seeds: 1
+Evaluation seed: 42
+
+Results:
+Success Rate: 0.00% ± 0.00%
+Average Trajectory Length: nan ± nan mm
+Average Time Cost: nan ± nan steps
