@@ -10,6 +10,9 @@ from stable_baselines3.common.utils import set_random_seed
 from algorithm_configs_online import get_algorithm_config
 import gc
 import torch
+from PyQt5.QtWidgets import QApplication
+import sys
+import threading
 
 gc.collect()
 torch.cuda.empty_cache()
@@ -62,7 +65,7 @@ def parse_arguments():
     parser.add_argument('--randomization_params', type=str, default='0,0,0', help='Randomization parameters')
     return parser.parse_args()
 
-def main():
+def run_training(domain_randomization_callback):
     
     args = parse_arguments()
     set_random_seed(args.seed)
@@ -82,9 +85,7 @@ def main():
         save_path=f"{Base_directory}/{args.task_name}/{args.algorithm}/{args.reward_type}/seed_{args.seed}/checkpoints/",
         name_prefix="rl_model"
     )
-    
-    domain_randomization_callback = DomainRandomizationCallback(args.randomization_params)
-    
+        
     callback_list = CallbackList([checkpoint_callback, domain_randomization_callback])
     
     # Train the model
@@ -97,5 +98,16 @@ def main():
 
     env.close()
 
+
 if __name__ == "__main__":
-    main()
+    args = parse_arguments()
+    app = QApplication(sys.argv)
+
+    domain_randomization_callback = DomainRandomizationCallback(args.randomization_params)
+    domain_randomization_callback.start_gui(app)
+
+    # Start RL training in a background thread
+    training_thread = threading.Thread(target=run_training, args=(domain_randomization_callback,))
+    training_thread.start()
+
+    sys.exit(app.exec_())

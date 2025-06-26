@@ -59,8 +59,8 @@ def run_evaluation(env, model, num_episodes, max_episode_steps):
         trajectory_length = 0
         for timestep in range(max_episode_steps):
             action, _ = model.predict(obs, deterministic=True)
-            next_obs, reward, terminated, truncated, info = env.step(action)
-            trajectory_length += np.linalg.norm(action[0:3] * env.step_size[0:3] * 1000)
+            next_obs, reward, terminated, truncated, info = env.unwrapped.step(action)
+            trajectory_length += np.linalg.norm(action[0:3] * env.unwrapped.step_size[0:3] * 1000)
             obs = next_obs
             if terminated:
                 total_success += 1
@@ -109,7 +109,8 @@ def main():
     
     env, step_size, threshold, max_episode_steps = setup_environment(args)
     
-    train_seeds = [1, 10, 100, 1000, 10000]
+    # train_seeds = [1, 10, 100, 1000, 10000]
+    train_seeds = [10]  # Example seeds for evaluation
     all_success_rates = []
     all_lengths = []
     all_timecosts = []

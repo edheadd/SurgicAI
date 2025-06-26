@@ -173,7 +173,9 @@ class SRC_subtask(gym.Env):
 
         multiplier = np.ones(21, dtype=np.float32)
         indices_to_multiply_100 = [0, 1, 2, 7, 8, 9, 14, 15, 16]
-        multiplier[indices_to_multiply_100] = 100
+        multiplier[indices_to_multiply_100] = 10
+        
+
         observation_dict["observation"] = np.array(observation * multiplier,dtype=np.float32)
 
         multiplier2 = np.array([100,100,100,1,1,1,1])
