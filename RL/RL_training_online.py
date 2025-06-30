@@ -65,13 +65,8 @@ def parse_arguments():
     parser.add_argument('--randomization_params', type=str, default='0,0,0,0', help='Randomization parameters')
     return parser.parse_args()
 
-def run_training(domain_randomization_callback):
-    
-    args = parse_arguments()
-    set_random_seed(args.seed)
-    
-    # Setup the environment
-    env, step_size, threshold, max_episode_steps = setup_environment(args)
+def run_training(args, env, domain_randomization_callback):
+      
     
     # Load expert data
     expert_data = load_expert_data(args.task_name)
@@ -102,12 +97,18 @@ def run_training(domain_randomization_callback):
 if __name__ == "__main__":
     args = parse_arguments()
     app = QApplication(sys.argv)
+    
+    args = parse_arguments()
+    set_random_seed(args.seed)
+    
+    # Setup the environment
+    env, step_size, threshold, max_episode_steps = setup_environment(args)
 
-    domain_randomization_callback = DomainRandomizationCallback(args.randomization_params)
+    domain_randomization_callback = DomainRandomizationCallback(args.randomization_params, env)
     domain_randomization_callback.start_gui(app)
 
     # Start RL training in a background thread
-    training_thread = threading.Thread(target=run_training, args=(domain_randomization_callback,))
+    training_thread = threading.Thread(target=run_training, args=(args, env, domain_randomization_callback,))
     training_thread.start()
 
     sys.exit(app.exec_())
