@@ -20,17 +20,17 @@ class DomainRandomizationCallback(BaseCallback):
         self.dict = {"gravity": self.randomization_params[0],
                      "light_num": self.randomization_params[1],
                      "light_color": self.randomization_params[2],
-                     "light_atten": self.randomization_params[3]}     
+                     "light_attenuation": self.randomization_params[3]}     
         
         self.gravity_pub = rospy.Publisher('/ambf/env/world_randomization/gravity', Gravity, queue_size=1)
         self.light_num_pub = rospy.Publisher('/ambf/env/world_randomization/light_num', LightNum, queue_size=1)
         self.light_color_pub = rospy.Publisher('/ambf/env/world_randomization/light_color', LightColor, queue_size=1)
-        self.light_atten_pub = rospy.Publisher('/ambf/env/world_randomization/light_atten', LightAttenuation, queue_size=1)
+        self.light_attenuation_pub = rospy.Publisher('/ambf/env/world_randomization/light_attenuation', LightAttenuation, queue_size=1)
         
         self.randomization_functions = [self.randomize_gravity,
                                         self.randomize_light_num,
                                         self.randomize_light_color,
-                                        self.randomize_light_atten]
+                                        self.randomize_light_attenuation]
 
         rospy.sleep(1.0)
 
@@ -69,7 +69,7 @@ class DomainRandomizationCallback(BaseCallback):
         msg = Gravity()
         msg.gravity.x = 0.0
         msg.gravity.y = 0.0
-        msg.gravity.z = random.choice([-9.81, 0.0]) if self.dict["gravity"] else -9.81
+        msg.gravity.z = random.uniform(-9.9, -9.7) if self.dict["gravity"] else -9.81
         self.gravity_pub.publish(msg)
     
     
@@ -81,16 +81,24 @@ class DomainRandomizationCallback(BaseCallback):
     
     def randomize_light_color(self):
         msg = LightColor()
-        msg.rgb.r = random.uniform(0, 1) if self.dict["light_color"] else 1
-        msg.rgb.g = random.uniform(0, 1) if self.dict["light_color"] else 1
-        msg.rgb.b = random.uniform(0, 1) if self.dict["light_color"] else 1
+        if self.dict["light_num"]: 
+            msg.rgb.r = random.uniform(0.9, 1.0)
+            msg.rgb.g = random.uniform(0.85, 1.0)
+            msg.rgb.b = random.uniform(0.75, 1.0)
+        else:
+            msg.rgb.r = msg.rgb.g = msg.rgb.b = 1.0          
         msg.rgb.a = 1
         self.light_color_pub.publish(msg)
         
-    def randomize_light_atten(self):
+    def randomize_light_attenuation(self):
         msg = LightAttenuation()
-        msg.constant = random.uniform(0, 1) if self.dict["light_atten"] else 1
-        msg.linear = random.uniform(0, 1) if self.dict["light_atten"] else 0.0
-        msg.quadratic = random.uniform(0, 1) if self.dict["light_atten"] else 0.0
-        self.light_atten_pub.publish(msg)
+        if self.dict["light_attenuation"]:
+            msg.constant = random.uniform(0.5, 1.0)
+            msg.linear = random.uniform(0.005, 0.05)
+            msg.quadratic = random.uniform(0.0001, 0.01)
+        else:
+            msg.constant = 1.0
+            msg.linear = 0.0
+            msg.quadratic = 0.0
+        self.light_attenuation_pub.publish(msg)
 
