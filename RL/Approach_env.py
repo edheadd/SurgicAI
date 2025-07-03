@@ -98,6 +98,14 @@ class SRC_approach(SRC_subtask):
             if distances_trans <= self.threshold_trans and distances_angle <= self.threshold_angle and self.jaw_angle_list[self.psm_idx-1] <= 0.1:
                 print(f"Matched degree is {self.needle_kin.start_degree + idx * (self.needle_kin.end_degree - self.needle_kin.start_degree) / self.needle_kin.num_points}, distance_trans = {distances_trans}, distances_angle = {np.degrees(distances_angle)}")
                 print("Attach the needle to the gripper")
+                
+                print(f"\n--- Goal Check {idx} ---")
+                print(f"Desired Goal:       Pos {desired_goal[:3]}, Angle {desired_goal[3:6]}")
+                print(f"Achieved Goal:      Pos {achieved_goal[:3]}, Angle {achieved_goal[3:6]}")
+                print(f"Distance Trans:     {distances_trans:.4f} m")
+                print(f"Distance Angle:     {np.degrees(distances_angle):.4f} degrees")
+                print(f"Jaw Angle:          {self.jaw_angle_list[self.psm_idx-1]:.4f}")
+                
                 self.psm2.actuators[0].actuate("Needle")
                 self.needle.needle.set_force([0.0,0.0,0.0])
                 self.needle.needle.set_torque([0.0,0.0,0.0])

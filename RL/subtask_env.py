@@ -165,7 +165,7 @@ class SRC_subtask(gym.Env):
 
     def normalize_observation(self,observation_dict):
         '''
-        Scaling the observations, translation into 'cm', orientation into 'rad'.
+        Scaling the observations, translation into 'cm', orientation into 'rad'.    
         '''
         observation = observation_dict["observation"]
         achieved_goal = observation_dict["achieved_goal"]
@@ -173,9 +173,7 @@ class SRC_subtask(gym.Env):
 
         multiplier = np.ones(21, dtype=np.float32)
         indices_to_multiply_100 = [0, 1, 2, 7, 8, 9, 14, 15, 16]
-        multiplier[indices_to_multiply_100] = 10
-        
-
+        multiplier[indices_to_multiply_100] = 100
         observation_dict["observation"] = np.array(observation * multiplier,dtype=np.float32)
 
         multiplier2 = np.array([100,100,100,1,1,1,1])
