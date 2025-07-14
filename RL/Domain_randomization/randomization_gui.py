@@ -4,9 +4,9 @@ class GUI(QWidget):
     def __init__(self, DomainRandomizationCallbackInstance):
         super().__init__()
         
-        self.env = DomainRandomizationCallbackInstance.env
-        self.name_list = list(DomainRandomizationCallbackInstance.dict.keys())
-        self.callback_randomize = DomainRandomizationCallbackInstance.randomize
+        self.func_dict = DomainRandomizationCallbackInstance.func_dict
+        self.name_list = list(self.func_dict.keys())
+        self.reset_env = DomainRandomizationCallbackInstance.reset_env
         self.update_randomization_params = DomainRandomizationCallbackInstance.update_randomization_params
         
         self.setWindowTitle('Domain Randomization Toggle')
@@ -16,17 +16,21 @@ class GUI(QWidget):
         layout = QGridLayout()
 
         for i in range(len(self.name_list)):
+            property_dict = self.func_dict[self.name_list[i]]
             label = QLabel(self.name_list[i])
             button = QPushButton()
-            if DomainRandomizationCallbackInstance.randomization_params[i]:
+            description_label = QLabel(property_dict.get("description", "No description provided"))
+            if property_dict["status"]:
                 button.setText('on')
             else:
                 button.setText('off')
                 
-            button.clicked.connect(self.make_toggle_func(button, i))
+            button.clicked.connect(self.make_toggle_func(button, self.name_list[i]))
             
             layout.addWidget(label, i, 0)
             layout.addWidget(button, i, 1)
+            layout.addWidget(description_label, i, 2)
+            
             
         immediate_label = QLabel("Immediate Randomization")    
         immediate_info = QLabel("If on, randomization will take effect on toggle, otherwise it will take effect after reset")
@@ -48,17 +52,13 @@ class GUI(QWidget):
         
         self.setLayout(layout)
 
-    def make_toggle_func(self, button, index):
+    def make_toggle_func(self, button, name):
         def toggle():
             new_state = 'off' if button.text() == 'on' else 'on'
             button.setText(new_state)
-            self.update_randomization_params(index, self.immediate_randomization)
-            print(f'Toggled {button.text()} for {self.name_list[index]}')
+            self.update_randomization_params(name, self.immediate_randomization)
+            print(f'Toggled {button.text()} for {name}')
         return toggle
-    
-    def reset_env(self):
-        self.env.unwrapped.reset()
-        self.callback_randomize()
     
     def make_immediate_toggle_func(self, button):
         def toggle():
