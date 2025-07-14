@@ -1,0 +1,96 @@
+gravity:
+  status: False
+  description: Gravity vector in the world frame.
+  namespace: gravity
+  message: Gravity
+  fields:
+    gravity:
+      x: 
+        default: 0.0
+        range: [0, 0]
+        type: float
+        holdouts: []
+      y: 
+        default: 0.0
+        range: [0, 0]
+        type: float
+        holdouts: []
+      z:
+        default: -9.81
+        range: [-9.9, -9.7]
+        type: float
+        holdouts: [-9.89, -9.87, -9.85, -9.83, -9.8, -9.78, -9.75, -9.73, -9.7]
+
+light_num:
+  status: False
+  description: Number of lights in the scene.
+  namespace: light_num
+  message: LightNum
+  fields:
+    num_lights:
+      default: 0
+      range: [0, 3]
+      type: int
+      holdouts: [2]
+
+light_color:
+  status: False
+  description: Color of the lights in the scene.
+  namespace: light_color
+  message: LightColor
+  fields:
+    rgb:
+      r:
+        default: 1.0
+        range: [0.9, 1]
+        type: float
+        holdouts: [0.92, 0.94, 0.96, 0.98]
+      g:
+        default: 1.0
+        range: [0.85, 1]
+        type: float
+        holdouts: [0.88, 0.9, 0.92, 0.94, 0.96, 0.98]
+      b:
+        default: 1.0
+        range: [0.75, 1]
+        type: float  
+        holdouts: [0.76, 0.78, 0.8, 0.82, 0.84, 0.86, 0.88, 0.9, 0.92, 0.94, 0.96, 0.98]
+      a:
+        default: 1.0
+        range: [1, 1]
+        type: float
+        holdouts: []
+
+light_attenuation:
+  status: False
+  description: Attenuation of the lights in the scene.
+  namespace: light_attenuation
+  message: LightAttenuation
+  fields:
+    constant:
+      default: 1.0
+      range: [0.5, 1]
+      type: float
+      holdouts: [0.6, 0.7, 0.8, 0.9]
+    linear:
+      default: 0.0
+      range: [0, 0.05]
+      type: float
+      holdouts: [0.01, 0.02, 0.03, 0.04]
+    quadratic:
+      default: 0.0
+      range: [0, 0.01]
+      type: float
+      holdouts: [0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009]
+
+# friction:
+#   status: False
+#   description: Friction of the objects in the scene.
+#   namespace: friction
+#   message: Friction
+#   fields:
+#     friction:
+#       default: 0.5
+#       range: [0.1, 0.5]
+#       type: float
+#       holdouts: [0.2, 0.3, 0.4]
