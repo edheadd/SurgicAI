@@ -1,6 +1,8 @@
 import numpy as np
 import pygame
 from Approach_env import SRC_approach
+from Regrasp_env import SRC_regrasp
+from Pullout_env import SRC_pullout
 import time
 
 KEY2ACTION = {
@@ -18,7 +20,16 @@ def teleop_loop():
     screen = pygame.display.set_mode((300, 100))
     pygame.display.set_caption("Teleop Control")
 
-    env = SRC_approach()
+    trans_step = 1.0e-3
+    angle_step = np.deg2rad(3)
+    jaw_step = 0.05
+    step_size = np.array([trans_step, trans_step, trans_step, angle_step, angle_step, angle_step, jaw_step], dtype=np.float32)
+
+    threshold = [3,np.deg2rad(30)]
+
+    # env = SRC_approach(step_size=step_size, threshold=threshold)
+    env = SRC_regrasp(step_size=step_size, threshold=threshold)
+    # env = SRC_pullout(step_size=step_size, threshold=threshold)
     env.reset()
 
     running = True

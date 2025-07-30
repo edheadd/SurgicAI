@@ -1,7 +1,7 @@
 import numpy as np
 from PyKDL import Frame, Rotation, Vector
 from surgical_robotics_challenge.kinematics.psmIK import *
-from surgical_robotics_challenge.kinematics.psmFK import *
+from surgical_robotics_challenge.kinematics.psmKinematics import *
 import imitation.data.types as idt
 
 def interpolate_actions(obs_array, max_action_diff):

@@ -5,7 +5,7 @@ from gymnasium import spaces
 import numpy as np
 import time
 from PyKDL import Frame, Rotation, Vector
-from surgical_robotics_challenge.kinematics.psmFK import *
+from surgical_robotics_challenge.kinematics.psmKinematics import *
 from subtask_env import SRC_subtask
 
 
@@ -21,11 +21,6 @@ class SRC_approach(SRC_subtask):
         """ Reset the state of the environment to an initial state """
         self.psm2.actuators[0].deactuate()
         self.needle_randomization()
-        ######################
-        # low_limits = [-0.02, -0.02, -0.01, -np.deg2rad(30), -np.deg2rad(30), -np.deg2rad(30), -0.1]
-        # high_limits = [0.02, 0.02, 0.01, np.deg2rad(30), np.deg2rad(30), np.deg2rad(30), 0.1]
-        # random_array = np.random.uniform(low=low_limits, high=high_limits)
-        # self.psm_goal_list[self.psm_idx-1] = self.init_psm2+random_array
         self.min_angle = 5
         self.max_angle = 20
         self.grasp_angle = np.random.uniform(self.min_angle, self.max_angle)

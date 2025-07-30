@@ -5,7 +5,7 @@ import time
 import re
 
 from PyKDL import Frame, Rotation, Vector
-from surgical_robotics_challenge.kinematics.psmFK import *
+from surgical_robotics_challenge.kinematics.psmKinematics import *
 from subtask_env import SRC_subtask
 
 

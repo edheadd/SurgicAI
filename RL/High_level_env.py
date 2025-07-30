@@ -3,7 +3,7 @@ from gymnasium import spaces
 import numpy as np
 import time
 from Low_env_init import low_level_controller
-from surgical_robotics_challenge.kinematics.psmFK import *
+from surgical_robotics_challenge.kinematics.psmKinematics import *
 
 def add_break(s):
     time.sleep(s)

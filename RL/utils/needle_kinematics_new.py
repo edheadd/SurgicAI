@@ -56,7 +56,8 @@ class NeedleKinematics_v2:
         :return:
         """
         self._T_nINw = pose_msg_to_frame(msg.pose)
-        self._T_nINw.p = self._T_nINw.p /10.0
+        self._T_nINw.p = self._T_nINw.p  /10.0
+
 
     def get_tip_pose(self):
         """

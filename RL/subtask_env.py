@@ -10,7 +10,7 @@ from surgical_robotics_challenge.scene import Scene
 from surgical_robotics_challenge.simulation_manager import SimulationManager
 from surgical_robotics_challenge.utils.task3_init import NeedleInitialization # Only for old SRC
 from utils.needle_kinematics_old import NeedleKinematics_v2
-from surgical_robotics_challenge.kinematics.psmFK import *
+from surgical_robotics_challenge.kinematics.psmKinematics import *
 
 class SRC_subtask(gym.Env):
     """Custom Environment that follows gym interface"""
@@ -73,8 +73,7 @@ class SRC_subtask(gym.Env):
         self.psm2 = PSM(self.simulation_manager, 'psm2',add_joint_errors=False)
         self.psm_list = [self.psm1, self.psm2]
         self.ecm = ECM(self.simulation_manager, 'CameraFrame')
-        self.ecm2 = ECM(self.simulation_manager, 'FreeCamera')
-        self.Camera_view_reset()
+        # self.Camera_view_reset()
 
         self.needle = NeedleInitialization(self.simulation_manager) # needle obj
         self.needle_kin = NeedleKinematics_v2() # needle movement and positioning
@@ -151,14 +150,15 @@ class SRC_subtask(gym.Env):
             return False
 
     def Camera_view_reset(self,reset_noise = False):
-        rotation = Rotation(-1, 0.0, 0.0,
-            0.0, -0.766044, 0.642788,
-            0.0, 0.642788, 0.766044)
+
+        camera_pose = self.ecm.camera_handle.get_pose()
+        rotation = camera_pose.M
+        base_vec = camera_pose.p
 
         if reset_noise:
-            vector = Vector(0.0, 0.1463076, 0.187126)+Vector(np.random.uniform(-0.02,0.02),np.random.uniform(-0.02,0.02),np.random.uniform(-0.02,0.02))
+            vector = base_vec +Vector(np.random.uniform(-0.02,0.02),np.random.uniform(-0.02,0.02),np.random.uniform(-0.02,0.02))
         else:
-            vector = Vector(0.0, 0.1463076, 0.187126)
+            vector = base_vec
         
         self.ecm_pos_origin = Frame(rotation, vector)
         self.ecm.servo_cp(self.ecm_pos_origin)
@@ -217,8 +217,8 @@ class SRC_subtask(gym.Env):
         Given obs = np.array([x,y,z,roll,pitch,yaw,jaw]) 
         move the designated psm to the positions.
         """
-        X= obs[0]
-        Y = obs[1]
+        X= obs[0]  
+        Y = obs[1] 
         Z = obs[2]
         Roll = obs[3]
         Pitch = obs[4]
@@ -473,14 +473,13 @@ class SRC_subtask(gym.Env):
             
     def needle_randomization(self):
         """
-        Initializa needle at random positions in the world
+        Initialize needle at random positions in the world
         """
-        origin_p = Vector( -0.0207937, 0.0562045, 0.0711726)
+
+        # Uses this to get position of needle, should be reliable because setting position uses simulation manager method as well
+        origin_p = self.needle.needle.get_pos()
         origin_rz = 0.0
 
-        # random_x = np.random.uniform(-0.003, 0.003)
-        # random_y = np.random.uniform(-0.02, 0.01)
-        # random_rz = np.random.uniform(-np.pi/6,np.pi/6)
         random_x = np.random.uniform(-self.random_range[0],self.random_range[0])
         random_y = np.random.uniform(-self.random_range[1],self.random_range[1])
         random_rz = np.random.uniform(-self.random_range[2],self.random_range[2])
@@ -492,7 +491,7 @@ class SRC_subtask(gym.Env):
         new_rot = Rotation(np.cos(origin_rz),-np.sin(origin_rz),0,
                             np.sin(origin_rz),np.cos(origin_rz),0,
                             0.0,0.0,1.0)
-        
+                
         needle_pos_new = Frame(new_rot,origin_p)
         self.needle.needle.set_pose(needle_pos_new)
             

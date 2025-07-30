@@ -46,7 +46,7 @@ class NeedleKinematics_v2:
         :return:
         """
         self._needle_sub = rospy.Subscriber(
-            '/ambf/env/Needle/State', RigidBodyState, self.needle_cb, queue_size=1)
+            '/ambf/env/phantom/Needle/State', RigidBodyState, self.needle_cb, queue_size=1)
         # Needle in World
         self._T_nINw = Frame()
 
@@ -56,7 +56,8 @@ class NeedleKinematics_v2:
         :return:
         """
         self._T_nINw = pose_msg_to_frame(msg.pose)
-        self._T_nINw.p = self._T_nINw.p /10.0
+        self._T_nINw.p = self._T_nINw.p  #/10.0
+        # print("needle callback")
 
     def get_tip_pose(self):
         """
