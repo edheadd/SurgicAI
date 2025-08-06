@@ -83,14 +83,14 @@ light_attenuation:
       type: float
       holdouts: [0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009]
 
-# friction:
-#   status: False
-#   description: Friction of the objects in the scene.
-#   namespace: friction
-#   message: Friction
-#   fields:
-#     friction:
-#       default: 0.5
-#       range: [0.1, 0.5]
-#       type: float
-#       holdouts: [0.2, 0.3, 0.4]
+friction:
+  status: False
+  description: Friction of the objects in the scene.
+  namespace: friction
+  message: Friction
+  fields:
+    friction:
+      default: 0.5
+      range: [0.1, 0.5]
+      type: float
+      holdouts: [0.2, 0.3, 0.4]

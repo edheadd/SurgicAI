@@ -4,8 +4,9 @@ class GUI(QWidget):
     def __init__(self, DomainRandomizationCallbackInstance):
         super().__init__()
         
-        self.func_dict = DomainRandomizationCallbackInstance.func_dict
-        self.name_list = list(self.func_dict.keys())
+        self.name_dict = DomainRandomizationCallbackInstance.name_dict
+        self.name_list = list(self.name_dict.keys())
+        self.randomization_params = DomainRandomizationCallbackInstance.randomization_params
         self.reset_env = DomainRandomizationCallbackInstance.reset_env
         self.update_randomization_params = DomainRandomizationCallbackInstance.update_randomization_params
         
@@ -16,17 +17,16 @@ class GUI(QWidget):
         layout = QGridLayout()
 
         for i in range(len(self.name_list)):
-            property_dict = self.func_dict[self.name_list[i]]
             label = QLabel(self.name_list[i])
             button = QPushButton()
-            description_label = QLabel(property_dict.get("description", "No description provided"))
-            if property_dict["status"]:
+            description_label = QLabel(self.name_dict[self.name_list[i]])
+            if self.randomization_params[i]:
                 button.setText('on')
             else:
                 button.setText('off')
-                
-            button.clicked.connect(self.make_toggle_func(button, self.name_list[i]))
-            
+
+            button.clicked.connect(self.make_toggle_func(button, i))
+
             layout.addWidget(label, i, 0)
             layout.addWidget(button, i, 1)
             layout.addWidget(description_label, i, 2)
@@ -52,12 +52,12 @@ class GUI(QWidget):
         
         self.setLayout(layout)
 
-    def make_toggle_func(self, button, name):
+    def make_toggle_func(self, button, idx):
         def toggle():
             new_state = 'off' if button.text() == 'on' else 'on'
             button.setText(new_state)
-            self.update_randomization_params(name, self.immediate_randomization)
-            print(f'Toggled {button.text()} for {name}')
+            self.update_randomization_params(idx, self.immediate_randomization)
+            print(f'Toggled {button.text()} for {self.name_list[idx]}')
         return toggle
     
     def make_immediate_toggle_func(self, button):
