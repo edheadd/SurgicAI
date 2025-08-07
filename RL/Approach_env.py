@@ -19,6 +19,7 @@ class SRC_approach(SRC_subtask):
     def reset(self,**kwargs):
         
         """ Reset the state of the environment to an initial state """
+        self.world_handle.reset()
         self.psm2.actuators[0].deactuate()
         self.needle_randomization()
         self.min_angle = 5
@@ -27,7 +28,6 @@ class SRC_approach(SRC_subtask):
 
         self.psm_goal_list[self.psm_idx-1] = np.copy(self.init_psm2)
         self.psm_step(self.psm_goal_list[self.psm_idx-1],self.psm_idx)
-        self.world_handle.reset()
         self.Camera_view_reset()
         time.sleep(0.5)
 

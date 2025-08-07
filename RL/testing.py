@@ -1,6 +1,7 @@
 import numpy as np
 import pygame
 from Approach_env import SRC_approach
+from Insert_env import SRC_insert
 from Regrasp_env import SRC_regrasp
 from Pullout_env import SRC_pullout
 import time
@@ -27,9 +28,10 @@ def teleop_loop():
 
     threshold = [3,np.deg2rad(30)]
 
-    # env = SRC_approach(step_size=step_size, threshold=threshold)
+    #env = SRC_approach(step_size=step_size, threshold=threshold)
+    #env = SRC_insert(step_size=step_size, threshold=threshold)
     env = SRC_regrasp(step_size=step_size, threshold=threshold)
-    # env = SRC_pullout(step_size=step_size, threshold=threshold)
+    #env = SRC_pullout(step_size=step_size, threshold=threshold)
     env.reset()
 
     running = True

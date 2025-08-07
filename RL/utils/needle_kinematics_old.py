@@ -109,13 +109,14 @@ class NeedleKinematics_v2:
     def get_random_grasp_point(self,random_degree=None):
         Radius = 0.1018
         min_degree = 10
-        max_degree = 50
+        max_degree = 15
         if (random_degree is None):
             random_degree = np.random.uniform(min_degree, max_degree)
             random_radian = np.deg2rad(random_degree)
         else:
             if not (min_degree <= random_degree <= max_degree):
                 raise ValueError("random_degree out of range. Must be between 10 and 50 degrees.")
+            random_radian = np.deg2rad(random_degree)
         T_randomINn = Frame(Rotation.RPY(0., 0., -random_radian), Vector(-Radius*np.cos(random_radian), Radius*np.sin(random_radian), 0.)/10.0)
 
         return self._T_nINw * T_randomINn

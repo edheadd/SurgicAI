@@ -29,32 +29,9 @@ class SRC_regrasp(SRC_subtask):
         self.world_handle.reset()
         time.sleep(0.5)
 
-        # Approach and grasp the needle
-        self.needle_obs = self.needle_random_grasping_evaluator(0.007)
-        self.needle_obs = np.append(self.needle_obs,0.8)
-        self.psm_step_move(self.needle_obs,2)
-        time.sleep(0.8)
-        self.needle_obs[-1] = 0.0
-        self.psm_step(self.needle_obs,2)
-        self.Camera_view_reset()
-        time.sleep(0.3)
-        self.psm2.actuators[0].actuate("Needle")
-        self.needle.needle.set_force([0.0,0.0,0.0])
-        self.needle.needle.set_torque([0.0,0.0,0.0])
-
-        # Place the needle at the entry
-        self.entry_obs = self.entry_goal_evaluator(idx=2,dev_trans=[0,0,0.001],noise=False) # Close noise in this case
-        self.psm_step_move(self.entry_obs,2,execute_time=0.5) 
-        time.sleep(0.8)
-
-        # Insert the needle
-        self.insert_mid_obs =  self.entry_goal_evaluator(105,[0.001,0,0],-50)
-        self.insert_obs = self.insert_goal_evaluator(90,[0.002,0,0])
-        self.psm_step_move(self.insert_mid_obs,2,execute_time=0.3)
-        time.sleep(0.6)
-        self.psm_step_move(self.insert_obs,2,execute_time=0.4)
-        self.psm_goal_list[1] = np.copy(self.insert_obs)
-        time.sleep(0.8)
+        self.approach_and_grasp()
+        self.place_at_entry()
+        self.insert_needle()
 
         self.goal_obs = self.needle_goal_evaluator(deg_angle=105,lift_height=0.005,psm_idx=1)
 

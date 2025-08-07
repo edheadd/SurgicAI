@@ -73,7 +73,7 @@ class SRC_subtask(gym.Env):
         self.psm2 = PSM(self.simulation_manager, 'psm2',add_joint_errors=False)
         self.psm_list = [self.psm1, self.psm2]
         self.ecm = ECM(self.simulation_manager, 'CameraFrame')
-        # self.Camera_view_reset()
+        self.Camera_view_reset()
 
         self.needle = NeedleInitialization(self.simulation_manager) # needle obj
         self.needle_kin = NeedleKinematics_v2() # needle movement and positioning
@@ -89,7 +89,7 @@ class SRC_subtask(gym.Env):
         self.psm_idx = None
         self.psm_goal_list = [self.psm1_goal,self.psm2_goal]
         self.goal_obs = None
-        
+               
         print("Initialized!!!")
         return
 
@@ -112,6 +112,60 @@ class SRC_subtask(gym.Env):
 
     def render(self, mode='human', close=False):
         pass
+
+
+    # SCRIPTS
+
+    def approach_and_grasp(self):
+        # Approach and grasp the needle
+        self.needle_obs = self.needle_random_grasping_evaluator(0.0003)
+        self.needle_obs = np.append(self.needle_obs,0.8)
+        self.psm_step_move(self.needle_obs,2)
+        time.sleep(0.6)
+        self.needle_obs[-1] = 0.0
+        self.psm_step(self.needle_obs,2)
+        # self.Camera_view_reset()
+        time.sleep(0.5)
+        self.psm2.actuators[0].actuate("Needle")
+        self.needle.needle.set_force([0.0,0.0,0.0])
+        self.needle.needle.set_torque([0.0,0.0,0.0])
+    
+    def place_at_entry(self):
+        # Place the needle at the entry
+        self.entry_obs = self.entry_goal_evaluator(idx=2,dev_trans=[0,0,0.001],noise=False) # Close noise in this case
+        self.adjusted_entry_obs = np.copy(self.entry_obs)
+        self.adjusted_entry_obs[1] = self.adjusted_entry_obs[1] + 0.003
+        self.adjusted_entry_obs[2] = self.adjusted_entry_obs[2] + 0.003
+        self.psm_step_move(self.adjusted_entry_obs,2,execute_time=1.2)
+        time.sleep(1.4) 
+        self.psm_step_move(self.entry_obs,2,execute_time=1)
+        time.sleep(1.4)
+
+    def insert_needle(self):
+        # Insert the needle
+        self.insert_mid_obs =  self.entry_goal_evaluator(105,[0.001,0,0],-50)
+        self.insert_obs = self.insert_goal_evaluator(90,[0.002,0,0])
+        self.psm_step_move(self.insert_mid_obs,2,execute_time=0.6)
+        time.sleep(0.8)
+        self.psm_step_move(self.insert_obs,2,execute_time=0.7)
+        self.psm_goal_list[1] = np.copy(self.insert_obs)
+        time.sleep(1)
+
+    def regrasp_needle(self):        
+        # Regrasp the needle
+        self.regrasp_obs = self.needle_goal_evaluator(deg_angle=105,lift_height=0.005,psm_idx=1)
+        self.regrasp_obs[-1] = 0.8
+        self.psm_step_move(self.regrasp_obs,1,execute_time=0.8)
+        time.sleep(1)
+        self.regrasp_obs[-1] = 0.0
+        self.psm_step(self.regrasp_obs,1)
+        time.sleep(0.4)
+        self.psm1.actuators[0].actuate("Needle")
+        self.needle.needle.set_force([0.0,0.0,0.0])
+        self.needle.needle.set_torque([0.0,0.0,0.0])
+        self.psm_goal_list[1][-1] = 0.8
+        self.psm_step(self.psm_goal_list[1],2)
+        time.sleep(0.3)
 
     def compute_reward(self, achieved_goal, desired_goal, info=None):
         """
@@ -160,8 +214,9 @@ class SRC_subtask(gym.Env):
         else:
             vector = base_vec
         
-        self.ecm_pos_origin = Frame(rotation, vector)
-        self.ecm.servo_cp(self.ecm_pos_origin)
+        ecm_pos_origin = Frame(rotation, vector)
+        self.ecm.servo_cp(ecm_pos_origin)
+
 
     def normalize_observation(self,observation_dict):
         '''
