@@ -20,7 +20,7 @@ def pose_msg_to_frame(msg):
 
     return Frame(R, p)
 
-class NeedleKinematics_v2:
+class NeedleKinematics:
     # # Base in Needle Origin
     # T_bINn = Frame(Rotation.RPY(0., 0., 0.), Vector(-0.102, 0., 0.)/10.0)
     # # Mid in Needle Origin

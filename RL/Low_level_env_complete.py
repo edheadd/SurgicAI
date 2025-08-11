@@ -11,7 +11,7 @@ from surgical_robotics_challenge.ecm_arm import ECM
 from surgical_robotics_challenge.scene import Scene
 from surgical_robotics_challenge.simulation_manager import SimulationManager
 from surgical_robotics_challenge.utils.task3_init import NeedleInitialization
-from utils.needle_kinematics_old import NeedleKinematics_v2
+from RL.utils.needle_kinematics import NeedleKinematics
 from surgical_robotics_challenge.kinematics.psmKinematics import *
 
 
@@ -21,7 +21,7 @@ def add_break(s):
 
 class SRC_low_level(gym.Env):
     """Custom Environment that follows gym interface"""
-    metadata = {'render.modes': ['human'],"reward_type":['dense']}
+    metadata = {'render_modes': ['human'],"reward_type":['dense']}
 
     def seed(self, seed=None):
         self.np_random, seed = gym.utils.seeding.np_random(seed)
@@ -92,7 +92,7 @@ class SRC_low_level(gym.Env):
         self.Camera_view_reset()
 
         self.needle = NeedleInitialization(self.simulation_manager) # needle obj
-        self.needle_kin = NeedleKinematics_v2() # needle movement and positioning
+        self.needle_kin = NeedleKinematics() # needle movement and positioning
         self.init_psm1 = np.array([ 0.04629208,0.00752399,-0.08173992,-3.598019,-0.05762508,1.2738742,0.8],dtype=np.float32)
         self.psm_step(self.init_psm1,1)
         self.init_psm2 = np.array([-0.03721037,  0.01213105, -0.08036895, -2.7039163, 0.07693613, 2.0361109, 0.8],dtype=np.float32)
