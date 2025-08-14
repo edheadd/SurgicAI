@@ -34,6 +34,7 @@ class SRCManager:
         # Initialize needle
         self.needle = NeedleInitialization(self.simulation_manager)
         self.needle_kin = NeedleKinematics()
+        self.needle_init_pos = self.needle.needle.get_pos()
         
         # Set initial positions
         self.init_psm1 = np.array([0.04629208, 0.00752399, -0.08173992, -3.598019, -0.05762508, 1.2738742, 0.8], dtype=np.float32)
@@ -118,8 +119,7 @@ class SRCManager:
         Initialize needle at random positions in the world
         """
 
-        # Uses this to get position of needle, should be reliable because setting position uses simulation manager method as well
-        origin_p = self.needle.needle.get_pos()
+        origin_p = self.needle_init_pos
         origin_rz = 0.0
 
         random_range = self.env.random_range

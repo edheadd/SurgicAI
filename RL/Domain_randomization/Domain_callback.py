@@ -14,7 +14,9 @@ class DomainRandomizationCallback(BaseCallback):
             "friction": "Friction of the objects in the scene.",
             "light_num": "Number of lights in the scene.",
             "light_color": "Color of the lights in the scene.",
-            "light_attenuation": "Attenuation of the lights in the scene."
+            "light_attenuation": "Attenuation of the lights in the scene.",
+            "shadows": "Shadow presence in the scene.",
+            "smoothening": "Smoothening in the scene.",
         }
 
         self.randomization_pub = rospy.Publisher('/ambf/env/world_randomization/randomization', Randomization, queue_size=1)
@@ -31,11 +33,14 @@ class DomainRandomizationCallback(BaseCallback):
     
     def randomize(self):
         msg = Randomization()
+        msg.timestep = self.env.unwrapped.timestep # doesn't work for some reason
         msg.gravity = self.randomization_params[0]
         msg.friction = self.randomization_params[1]
         msg.light_num = self.randomization_params[2]
         msg.light_color = self.randomization_params[3]
         msg.light_attenuation = self.randomization_params[4]
+        msg.shadows = self.randomization_params[5]
+        msg.smoothening = self.randomization_params[6]
         self.randomization_pub.publish(msg)
 
     def start_gui(self, app):

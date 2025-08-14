@@ -11,7 +11,7 @@ class SRC_subtask(gym.Env):
 
         # Define action and observation space
         super(SRC_subtask, self).__init__()
-        self.random_range = np.array([0.003, 0.02, np.pi / 6], dtype=np.float32)
+        self.random_range = np.array([0.0003, 0.002, np.pi / 6], dtype=np.float32)
         self.max_timestep = max_episode_step
         print(f"max episode length is {self.max_timestep}")
         self.step_size = step_size
