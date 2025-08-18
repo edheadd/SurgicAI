@@ -1,7 +1,7 @@
 import gymnasium as gym
 import numpy as np
 from utils.gym_manager import GymManager
-from utils.src_manager import SRCManager
+from utils.scene_manager import SceneManager
 
 class SRC_subtask(gym.Env):
     """Custom Environment that follows gym interface"""
@@ -30,7 +30,7 @@ class SRC_subtask(gym.Env):
         print(f"Translation threshold: {self.threshold_trans}, angle threshold: {self.threshold_angle}")
             
         self.gym_manager = GymManager(self, reward_type=reward_type, threshold=[threshold])
-        self.src_manager = SRCManager(self)
+        self.scene_manager = SceneManager(self)
         
         self.goal_obs = None
         self.obs = None
@@ -51,10 +51,10 @@ class SRC_subtask(gym.Env):
         """
         self.timestep += 1
         action_step = action*self.step_size
-        self.src_manager.psm_goal_list[self.psm_idx-1] = self.src_manager.psm_goal_list[self.psm_idx-1]+action_step
-        self.src_manager.step()
+        self.scene_manager.psm_goal_list[self.psm_idx-1] = self.scene_manager.psm_goal_list[self.psm_idx-1]+action_step
+        self.scene_manager.step()
 
-        return self.gym_manager.update_observation(self.src_manager.psm_goal_list[self.psm_idx-1])
+        return self.gym_manager.update_observation(self.scene_manager.psm_goal_list[self.psm_idx-1])
 
     def render(self, mode='human', close=False):
         pass

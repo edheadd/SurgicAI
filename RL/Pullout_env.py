@@ -12,16 +12,16 @@ class SRC_pullout(SRC_subtask):
         if seed is not None:
             self.set_seed(seed)
 
-        self.src_manager.env_reset()
+        self.scene_manager.env_reset()
 
-        self.src_manager.approach_and_grasp()
-        self.src_manager.place_at_entry()
-        self.src_manager.insert_needle()
-        self.src_manager.regrasp_needle()
+        self.scene_manager.approach_and_grasp()
+        self.scene_manager.place_at_entry()
+        self.scene_manager.insert_needle()
+        self.scene_manager.regrasp_needle()
         
-        self.goal_obs = self.src_manager.handover_goal_evaluator(idx=1)
-        self.src_manager.psm_goal_list[self.psm_idx-1] = np.copy(self.src_manager.regrasp_obs)
-        current = self.src_manager.init_psm1
+        self.goal_obs = self.scene_manager.handover_goal_evaluator(idx=1)
+        self.scene_manager.psm_goal_list[self.psm_idx-1] = np.copy(self.scene_manager.regrasp_obs)
+        current = self.scene_manager.init_psm1
         obs_array = np.concatenate((current,self.goal_obs,self.goal_obs-current), dtype=np.float32)
 
         self.init_obs_dict = {"observation":obs_array,"achieved_goal":current,"desired_goal":self.goal_obs}

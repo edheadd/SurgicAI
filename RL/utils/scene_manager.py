@@ -10,7 +10,7 @@ from utils.needle_kinematics import NeedleKinematics
 from surgical_robotics_challenge.kinematics.psmKinematics import *
 
 
-class SRCManager:
+class SceneManager:
     """Manages simulation initialization, PSM arms, and needle handling"""
     
     def __init__(self, env):
@@ -37,8 +37,11 @@ class SRCManager:
         self.needle_init_pos = self.needle.needle.get_pos()
         
         # Set initial positions
-        self.init_psm1 = np.array([0.04629208, 0.00752399, -0.08173992, -3.598019, -0.05762508, 1.2738742, 0.8], dtype=np.float32)
-        self.init_psm2 = np.array([-0.03721037, 0.01213105, -0.08036895, -2.7039163, 0.07693613, 2.0361109, 0.8], dtype=np.float32)
+
+        self.init_psm1 = np.array([0.0022920778,  0.0025239894, -0.15823957, -3.598019, -0.05762508, 1.2738742, 0.8], dtype=np.float32)
+        
+        self.init_psm2 = np.array([0.048289627, -0.0023689566, -0.17786837, -2.7039163, 0.07693613, 2.0361109, 0.8], dtype=np.float32)
+
         self.psm_goal_list = [self.init_psm1.copy(), self.init_psm2.copy()]
         
         # Move to initial positions

@@ -53,6 +53,7 @@ def teleop_loop():
             running = False
 
         obs, reward, done, truncate, info = env.step(action)
+        print(env.scene_manager.psm_goal_list)
         if done:
             print("Goal reached")
             time.sleep(20)

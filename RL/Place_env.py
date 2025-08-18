@@ -15,15 +15,15 @@ class SRC_place(SRC_subtask):
         if seed is not None:
             self.set_seed(seed)
         
-        self.src_manager.needle_randomization()
+        self.scene_manager.needle_randomization()
         self.env_reset()
 
-        self.src_manager.psm2.actuators[0].actuate("Needle")
-        self.src_manager.needle.needle.set_force([0.0,0.0,0.0])
-        self.src_manager.needle.needle.set_torque([0.0,0.0,0.0])
-        self.entry_obs = self.src_manager.place_entry_goal_evaluator(self.psm_idx)
+        self.scene_manager.psm2.actuators[0].actuate("Needle")
+        self.scene_manager.needle.needle.set_force([0.0,0.0,0.0])
+        self.scene_manager.needle.needle.set_torque([0.0,0.0,0.0])
+        self.entry_obs = self.scene_manager.place_entry_goal_evaluator(self.psm_idx)
         self.goal_obs = self.entry_obs
-        current = self.src_manager.psm_goal_list[self.psm_idx-1]
+        current = self.scene_manager.psm_goal_list[self.psm_idx-1]
         self.init_obs_array = np.concatenate((current,self.goal_obs,self.goal_obs-current),dtype=np.float32)
         self.init_obs_dict = {"observation":self.init_obs_array,"achieved_goal":current,"desired_goal":self.goal_obs}
 

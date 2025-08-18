@@ -15,15 +15,15 @@ class SRC_insert(SRC_subtask):
         if seed is not None:
             self.set_seed(seed)
 
-        self.src_manager.env_reset()
+        self.scene_manager.env_reset()
 
-        self.src_manager.approach_and_grasp()
-        self.src_manager.place_at_entry()
+        self.scene_manager.approach_and_grasp()
+        self.scene_manager.place_at_entry()
 
-        self.src_manager.psm_goal_list[self.psm_idx-1]  = self.src_manager.entry_obs
+        self.scene_manager.psm_goal_list[self.psm_idx-1]  = self.scene_manager.entry_obs
 
-        self.goal_obs = self.src_manager.insert_goal_evaluator(100,[0.002,0,0],self.psm_idx)
-        current = self.src_manager.psm_goal_list[self.psm_idx-1]
+        self.goal_obs = self.scene_manager.insert_goal_evaluator(100,[0.002,0,0],self.psm_idx)
+        current = self.scene_manager.psm_goal_list[self.psm_idx-1]
         obs_array = np.concatenate((current ,self.goal_obs,self.goal_obs-current ), dtype=np.float32)
 
         self.init_obs_dict = {"observation":obs_array,"achieved_goal":current ,"desired_goal":self.goal_obs}
@@ -39,12 +39,12 @@ class SRC_insert(SRC_subtask):
         action[-1]=0
         self.timestep += 1
         self.action = action
-        current = self.src_manager.psm_goal_list[self.psm_idx-1]
+        current = self.scene_manager.psm_goal_list[self.psm_idx-1]
         action_step = action*self.step_size
-        self.src_manager.world_handle.update()
+        self.scene_manager.world_handle.update()
 
 
-        self.src_manager.psm_goal_list[self.psm_idx-1] = np.clip(current+action_step, self.action_lims_low[0:7], self.action_lims_high[0:7])
-        self.src_manager.psm_step(self.src_manager.psm_goal_list[self.psm_idx-1] ,self.psm_idx)
-        return self.gym_manager.update_observation(self.src_manager.psm_goal_list[self.psm_idx-1])
+        self.scene_manager.psm_goal_list[self.psm_idx-1] = np.clip(current+action_step, self.action_lims_low[0:7], self.action_lims_high[0:7])
+        self.scene_manager.psm_step(self.scene_manager.psm_goal_list[self.psm_idx-1] ,self.psm_idx)
+        return self.gym_manager.update_observation(self.scene_manager.psm_goal_list[self.psm_idx-1])
 
