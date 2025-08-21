@@ -62,7 +62,7 @@ def parse_arguments():
     parser.add_argument('--seed', type=int, default=10, help='Random seed')
     parser.add_argument('--trans_error', type=float, required=True, help='Translational error threshold')
     parser.add_argument('--angle_error', type=float, required=True, help='Angular error threshold in degrees')
-    parser.add_argument('--randomization_params', type=str, default='0,0,0,0,0,0,0', help='Randomization parameters')
+    parser.add_argument('--randomization_params', type=str, default='0,0,0,0,0,0,0,0', help='Randomization parameters')
     return parser.parse_args()
 
 def run_training(args, env, domain_randomization_callback):
