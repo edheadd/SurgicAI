@@ -28,9 +28,9 @@ def teleop_loop():
 
     threshold = [3,np.deg2rad(30)]
 
-    #env = SRC_approach(step_size=step_size, threshold=threshold)
+    env = SRC_approach(step_size=step_size, threshold=threshold)
     #env = SRC_insert(step_size=step_size, threshold=threshold)
-    env = SRC_regrasp(step_size=step_size, threshold=threshold)
+    #env = SRC_regrasp(step_size=step_size, threshold=threshold)
     #env = SRC_pullout(step_size=step_size, threshold=threshold)
     env.reset()
 
@@ -45,15 +45,16 @@ def teleop_loop():
                 running = False
 
         keys = pygame.key.get_pressed()
-        for key, (idx, val) in KEY2ACTION.items():
-            if keys[key]:
-                action[idx] = val
+        # for key, (idx, val) in KEY2ACTION.items():
+        #     if keys[key]:
+        #         action[idx] = val
+
+        
 
         if keys[pygame.K_ESCAPE]:
             running = False
 
         obs, reward, done, truncate, info = env.step(action)
-        print(env.scene_manager.psm_goal_list)
         if done:
             print("Goal reached")
             time.sleep(20)

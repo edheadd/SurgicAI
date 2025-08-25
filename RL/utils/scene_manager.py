@@ -36,11 +36,14 @@ class SceneManager:
         self.needle_kin = NeedleKinematics()
         self.needle_init_pos = self.needle.needle.get_pos()
         
-        # Set initial positions
+        # Move PSM baselinks
+        self.psm1.base.set_pos(Vector(0.14, 0.34, 0.8))
+        self.psm2.base.set_pos(Vector(-0.08, 0.34, 0.8))
 
-        self.init_psm1 = np.array([0.0022920778,  0.0025239894, -0.15823957, -3.598019, -0.05762508, 1.2738742, 0.8], dtype=np.float32)
-        
-        self.init_psm2 = np.array([0.048289627, -0.0023689566, -0.17786837, -2.7039163, 0.07693613, 2.0361109, 0.8], dtype=np.float32)
+        # Set initial positions
+        self.init_psm1 = np.array([ 0.04629208,0.00752399,-0.08173992,-3.598019,-0.05762508,1.2738742,0.8],dtype=np.float32)
+        self.init_psm2 = np.array([-0.03721037,  0.01213105, -0.08036895, -2.7039163, 0.07693613, 2.0361109, 0.8],dtype=np.float32)
+
 
         self.psm_goal_list = [self.init_psm1.copy(), self.init_psm2.copy()]
         
