@@ -21,7 +21,7 @@ class DomainRandomizationCallback(BaseCallback):
             "light_attenuation": "Attenuation of the lights in the scene.",
             "shadows": "Shadow presence in the scene.",
             "smoothening": "Smoothening in the scene.",
-            "shaders": "Shaders used in the scene."
+            # "shaders": "Shaders used in the scene."
         }
 
         try:
@@ -43,7 +43,8 @@ class DomainRandomizationCallback(BaseCallback):
     
     def randomize(self):
         msg = Randomization()
-        msg.timestep = self.env.unwrapped.timestep # doesn't work for some reason
+        msg.timestep = self.num_timesteps
+        # msg.timestep = self.env.unwrapped.timestep # doesn't work for some reason
         msg.gravity = self.randomization_params[0]
         msg.friction = self.randomization_params[1]
         msg.light_num = self.randomization_params[2]
