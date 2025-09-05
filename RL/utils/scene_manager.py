@@ -150,6 +150,8 @@ class SceneManager:
         noise_in_entry = Frame(rotation_noise, translation_noise)
 
         entry_in_world = self.scene.entry1_measured_cp()
+        entry_in_world.p[1] -= 0.005
+        entry_in_world.p[2] += 0.006
         noise_in_world = entry_in_world*noise_in_entry
         entry_in_base = self.psm_list[idx-1].get_T_w_b()*noise_in_world # entry with angle deviation
 
@@ -240,7 +242,8 @@ class SceneManager:
         return array_insert
     
     def needle_random_grasping_evaluator(self,lift_height):
-        self.random_degree = np.random.uniform(5, 20)
+        self.random_degree = np.random.uniform(12, 15)
+        print(self.random_degree)
         self.grasping_pos = self.needle_kin.get_random_grasp_point()
         needle_rot = self.grasping_pos.M
         needle_trans_lift = Vector(self.grasping_pos.p.x(),self.grasping_pos.p.y(),self.grasping_pos.p.z()+lift_height)
@@ -364,7 +367,7 @@ class SceneManager:
     
     def approach_and_grasp(self):
         # Approach and grasp the needle
-        self.needle_obs = self.needle_random_grasping_evaluator(0.0003)
+        self.needle_obs = self.needle_random_grasping_evaluator(0.0007)
         self.needle_obs = np.append(self.needle_obs,0.8)
         self.psm_step_move(self.needle_obs,2)
         time.sleep(0.6)
@@ -384,14 +387,11 @@ class SceneManager:
         self.psm_step_move(self.adjusted_entry_obs,2,execute_time=1.2)
         time.sleep(1.4) 
         self.psm_step_move(self.entry_obs,2,execute_time=1)
-        time.sleep(1.4)
+        time.sleep(1.8)
 
     def insert_needle(self):
         # Insert the needle
-        self.insert_mid_obs =  self.entry_goal_evaluator(105,[0.001,0,0],-50)
         self.insert_obs = self.insert_goal_evaluator(90,[0.002,0,0])
-        self.psm_step_move(self.insert_mid_obs,2,execute_time=0.6)
-        time.sleep(0.8)
         self.psm_step_move(self.insert_obs,2,execute_time=0.7)
         self.psm_goal_list[1] = np.copy(self.insert_obs)
         time.sleep(1)

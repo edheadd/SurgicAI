@@ -28,10 +28,10 @@ def teleop_loop():
 
     threshold = [3,np.deg2rad(30)]
 
-    env = SRC_approach(step_size=step_size, threshold=threshold)
+    #env = SRC_approach(step_size=step_size, threshold=threshold)
     #env = SRC_insert(step_size=step_size, threshold=threshold)
     #env = SRC_regrasp(step_size=step_size, threshold=threshold)
-    #env = SRC_pullout(step_size=step_size, threshold=threshold)
+    env = SRC_pullout(step_size=step_size, threshold=threshold)
     env.reset()
 
     running = True
