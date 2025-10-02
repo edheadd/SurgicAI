@@ -22,6 +22,8 @@ class SceneManager:
         # Initialize simulation components
         self.simulation_manager = SimulationManager('src_client')
         self.world_handle = self.simulation_manager.get_world_handle()
+        self.world_handle.reset()
+        time.sleep(0.5)
         self.scene = Scene(self.simulation_manager)
         
         # Initialize arms
@@ -64,10 +66,10 @@ class SceneManager:
     
     def env_reset(self):
         """Reset the simulation state"""
-        self.psm_goal_list[0] = np.copy(self.init_psm1)
-        self.psm_goal_list[1] = np.copy(self.init_psm2)
         self.psm1.actuators[0].deactuate()
         self.psm2.actuators[0].deactuate()
+        self.psm_goal_list[0] = np.copy(self.init_psm1)
+        self.psm_goal_list[1] = np.copy(self.init_psm2)
         self.psm_step(self.psm_goal_list[0], 1)
         self.psm_step(self.psm_goal_list[1], 2)
         self.world_handle.reset()
@@ -124,6 +126,9 @@ class SceneManager:
         """
         Initialize needle at random positions in the world
         """
+
+        self.needle.needle.set_force([0.0,0.0,0.0])
+        self.needle.needle.set_torque([0.0,0.0,0.0])
 
         origin_p = self.needle_init_pos
         origin_rz = 0.0
@@ -243,7 +248,6 @@ class SceneManager:
     
     def needle_random_grasping_evaluator(self,lift_height):
         self.random_degree = np.random.uniform(12, 15)
-        print(self.random_degree)
         self.grasping_pos = self.needle_kin.get_random_grasp_point()
         needle_rot = self.grasping_pos.M
         needle_trans_lift = Vector(self.grasping_pos.p.x(),self.grasping_pos.p.y(),self.grasping_pos.p.z()+lift_height)

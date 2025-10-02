@@ -17,10 +17,9 @@ class SRC_approach(SRC_subtask):
         if seed is not None:
             self.set_seed(seed)
 
-        self.scene_manager.needle_randomization()
-
         self.scene_manager.env_reset()
-
+        self.scene_manager.needle_randomization()
+        
         self.min_angle = 5
         self.max_angle = 20
         self.grasp_angle = np.random.uniform(self.min_angle, self.max_angle)

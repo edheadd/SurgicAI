@@ -39,10 +39,15 @@ def parse_arguments():
     parser.add_argument('--trans_error', type=float, required=True, help='Translational error threshold')
     parser.add_argument('--angle_error', type=float, required=True, help='Angular error threshold in degrees')
     parser.add_argument('--eval_seed', type=int, default=42, help='Fixed seed for evaluation')
+    parser.add_argument('--randomized', type=int, default=False, help='Whether to use environment was randomized during training')
     return parser.parse_args()
 
-def load_model(algorithm, env, task_name, reward_type, seed):
-    model_path = f"{Base_directory}/{task_name}/{algorithm}/{reward_type}/seed_{seed}/final_model.zip"
+def load_model(algorithm, env, task_name, reward_type, seed, randomized):
+    if randomized:
+        randomization_str = "with_randomization"
+    else:
+        randomization_str = "no_randomization"
+    model_path = f"{Base_directory}/{task_name}/{algorithm}/{reward_type}/seed_{seed}/randomization_{randomization_str}/final_model.zip"
     algorithm_config = get_algorithm_config(algorithm, env, task_name, reward_type, seed, None, True)
     model_class = algorithm_config['class']
     return model_class.load(model_path, env=env)
@@ -80,8 +85,13 @@ def save_results(args, results, train_seeds):
     results_dir = f"{Base_directory}/{args.task_name}/{args.algorithm}/{args.reward_type}/evaluation_results"
     os.makedirs(results_dir, exist_ok=True)
     
+    if args.randomized:
+        randomization_str = "with_randomization"
+    else:
+        randomization_str = "no_randomization"
+    
     # Save detailed results to txt file
-    txt_file = os.path.join(results_dir, f"{args.task_name}_{args.algorithm}_{args.reward_type}_results.txt")
+    txt_file = os.path.join(results_dir, f"{args.task_name}_{args.algorithm}_{args.reward_type}_{randomization_str}_results.txt")
     with open(txt_file, 'w') as f:
         f.write(f"Task: {args.task_name}\n")
         f.write(f"Algorithm: {args.algorithm}\n")
@@ -95,7 +105,7 @@ def save_results(args, results, train_seeds):
     
     print(f"\nDetailed results saved to {txt_file}")
 
-    numbers_file = os.path.join(results_dir, f"{args.task_name}_{args.algorithm}_{args.reward_type}_numbers.txt")
+    numbers_file = os.path.join(results_dir, f"{args.task_name}_{args.algorithm}_{args.reward_type}_{randomization_str}_numbers.txt")
     with open(numbers_file, 'w') as f:
         f.write(f"{results['mean_success_rate']} {results['std_success_rate']} ")
         f.write(f"{results['mean_avg_length']} {results['std_avg_length']} ")
@@ -109,14 +119,13 @@ def main():
     
     env, step_size, threshold, max_episode_steps = setup_environment(args)
     
-    # train_seeds = [1, 10, 100, 1000, 10000]
-    train_seeds = [10]  # Example seeds for evaluation
+    train_seeds = [1, 10, 100, 1000, 10000]
     all_success_rates = []
     all_lengths = []
     all_timecosts = []
     
     for train_seed in train_seeds:
-        model = load_model(args.algorithm, env, args.task_name, args.reward_type, train_seed)
+        model = load_model(args.algorithm, env, args.task_name, args.reward_type, train_seed, args.randomized)
         
         num_episodes = 20
         success_rate, avg_length, avg_timecost, lengths, timecosts = run_evaluation(env, model, num_episodes, max_episode_steps)

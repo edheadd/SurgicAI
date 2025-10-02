@@ -15,8 +15,8 @@ class SRC_place(SRC_subtask):
         if seed is not None:
             self.set_seed(seed)
         
+        self.scene_manager.env_reset()
         self.scene_manager.needle_randomization()
-        self.env_reset()
 
         self.scene_manager.psm2.actuators[0].actuate("Needle")
         self.scene_manager.needle.needle.set_force([0.0,0.0,0.0])
