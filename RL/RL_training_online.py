@@ -104,7 +104,7 @@ if __name__ == "__main__":
     # Setup the environment
     env, step_size, threshold, max_episode_steps = setup_environment(args)
 
-    domain_randomization_callback = DomainRandomizationCallback(env, args.randomization_params)
+    domain_randomization_callback = DomainRandomizationCallback(env, args.randomization_params, args.seed)
     domain_randomization_callback.start_gui(app)
 
     # Start RL training in a background thread
