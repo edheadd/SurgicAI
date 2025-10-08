@@ -8,7 +8,7 @@ except ImportError:
     print("World randomization ROS messages not found, please ensure Domain Randomization AMBF Plugin is built and sourced")
 
 class DomainRandomizationCallback(BaseCallback):
-    def __init__(self, env, randomization_args="0,0,0,0,0,0,0,0", seed=42, verbose=0):
+    def __init__(self, env, randomization_args="0,0,0,0,0", seed=42, verbose=0):
         super().__init__(verbose)
                         
         self.randomization_params = [True if x == "1" else False for x in randomization_args.split(",")]
@@ -50,8 +50,8 @@ class DomainRandomizationCallback(BaseCallback):
         msg.light_num = self.randomization_params[2]
         msg.light_color = self.randomization_params[3]
         msg.light_attenuation = self.randomization_params[4]
-        msg.shadows = self.randomization_params[5]
-        msg.shader = self.randomization_params[6]
+        #msg.shadows = self.randomization_params[5]
+        #msg.shader = self.randomization_params[6]
         self.randomization_pub.publish(msg)
 
     def start_gui(self, app):
