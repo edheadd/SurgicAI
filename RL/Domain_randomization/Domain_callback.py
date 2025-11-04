@@ -8,7 +8,7 @@ except ImportError:
     print("World randomization ROS messages not found, please ensure Domain Randomization AMBF Plugin is built and sourced")
 
 class DomainRandomizationCallback(BaseCallback):
-    def __init__(self, env, randomization_args="0,0,0,0,0,0,0,0", seed=42, verbose=0):
+    def __init__(self, env, randomization_args="0,0,0,0,0", seed=42, verbose=0):
         super().__init__(verbose)
                         
         self.randomization_params = [True if x == "1" else False for x in randomization_args.split(",")]
