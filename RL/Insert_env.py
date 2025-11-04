@@ -3,10 +3,10 @@ from subtask_env import SRC_subtask
 
 
 class SRC_insert(SRC_subtask):
-    def __init__(self,seed=None,render_mode = None,reward_type = "sparse",threshold = [0.5,np.deg2rad(30)],max_episode_step=200, step_size=None):
+    def __init__(self,seed=None,render_mode = None,reward_type = "sparse",threshold = [0.5,np.deg2rad(30)],max_episode_step=200, step_size=None, stepDR=None):
 
         # Define action and observation space
-        super(SRC_insert, self).__init__(seed,render_mode,reward_type,threshold,max_episode_step, step_size)
+        super(SRC_insert, self).__init__(seed,render_mode,reward_type,threshold,max_episode_step, step_size, stepDR)
         self.psm_idx = 2
         self.action_lims_low = np.array([-0.1, -0.1, -0.25, np.deg2rad(-270), np.deg2rad(-80), np.deg2rad(-260), 0],dtype=np.float32)
         self.action_lims_high = np.array([0.1, 0.1, 0.05, np.deg2rad(-90), np.deg2rad(80), np.deg2rad(260), 1],dtype=np.float32)

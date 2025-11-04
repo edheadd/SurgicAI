@@ -40,14 +40,17 @@ def parse_arguments():
     parser.add_argument('--angle_error', type=float, required=True, help='Angular error threshold in degrees')
     parser.add_argument('--eval_seed', type=int, default=42, help='Fixed seed for evaluation')
     parser.add_argument('--randomized', type=int, default=False, help='Whether to use environment was randomized during training')
+    parser.add_argument('--stepDR', type=bool, default=False, help='Enable step size domain randomization')
     return parser.parse_args()
 
-def load_model(algorithm, env, task_name, reward_type, seed, randomized):
+def load_model(algorithm, env, task_name, reward_type, seed, randomized, stepDR):
     if randomized:
-        randomization_str = "with_randomization"
+        randomization_str = "randomization"
+    elif stepDR:
+        randomization_str = "stepDR"
     else:
         randomization_str = "no_randomization"
-    model_path = f"{Base_directory}/{task_name}/{algorithm}/{reward_type}/seed_{seed}/randomization_{randomization_str}/final_model.zip"
+    model_path = f"{Base_directory}/{task_name}/{algorithm}/{reward_type}/seed_{seed}/{randomization_str}/final_model.zip"
     algorithm_config = get_algorithm_config(algorithm, env, task_name, reward_type, seed, None, True)
     model_class = algorithm_config['class']
     return model_class.load(model_path, env=env)
@@ -86,7 +89,9 @@ def save_results(args, results, train_seeds):
     os.makedirs(results_dir, exist_ok=True)
     
     if args.randomized:
-        randomization_str = "with_randomization"
+        randomization_str = "randomization"
+    elif args.stepDR:
+        randomization_str = "stepDR"
     else:
         randomization_str = "no_randomization"
     
@@ -125,7 +130,7 @@ def main():
     all_timecosts = []
     
     for train_seed in train_seeds:
-        model = load_model(args.algorithm, env, args.task_name, args.reward_type, train_seed, args.randomized)
+        model = load_model(args.algorithm, env, args.task_name, args.reward_type, train_seed, args.randomized, args.stepDR)
         
         num_episodes = 20
         success_rate, avg_length, avg_timecost, lengths, timecosts = run_evaluation(env, model, num_episodes, max_episode_steps)

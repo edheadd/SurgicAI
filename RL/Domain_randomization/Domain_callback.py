@@ -50,8 +50,8 @@ class DomainRandomizationCallback(BaseCallback):
         msg.light_num = self.randomization_params[2]
         msg.light_color = self.randomization_params[3]
         msg.light_attenuation = self.randomization_params[4]
-        msg.shadows = self.randomization_params[5]
-        msg.shader = self.randomization_params[6]
+        # msg.shadows = self.randomization_params[5]
+        # msg.shader = self.randomization_params[6]
         self.randomization_pub.publish(msg)
 
     def start_gui(self, app):

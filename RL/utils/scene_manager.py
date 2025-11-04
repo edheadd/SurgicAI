@@ -19,6 +19,10 @@ class SceneManager:
         self.psm_goal_list = []
         self.jaw_angle_list = []
         
+        # step size DR manage
+        self.stepDR = self.env.stepDR
+        self.pct = 0.5
+        
         # Initialize simulation components
         self.simulation_manager = SimulationManager('src_client')
         self.world_handle = self.simulation_manager.get_world_handle()
@@ -74,8 +78,21 @@ class SceneManager:
         self.psm_step(self.psm_goal_list[1], 2)
         self.world_handle.reset()
         self.camera_view_reset()
+        if self.stepDR:
+            self.step_size_update()
+            print("Randomized step size:", self.env.step_size)
         time.sleep(1.0)
     
+    def step_size_update(self):
+        """Update step size based on current randomization settings"""
+        if not self.stepDR:
+            return
+        
+        base = np.asarray(self.env.base_step_size)
+        factors = np.random.uniform(1.0 - self.pct, 1.0 + self.pct, size=base.shape).astype(base.dtype)
+        self.env.step_size = base * factors
+
+
     def camera_view_reset(self, reset_noise=False):
         """Reset camera view"""
         camera_pose = self.ecm.camera_handle.get_pose()

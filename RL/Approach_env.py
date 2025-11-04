@@ -5,10 +5,10 @@ from subtask_env import SRC_subtask
 
 
 class SRC_approach(SRC_subtask):
-    def __init__(self,seed=None,render_mode = None,reward_type = "sparse",threshold = [0.5,np.deg2rad(30)],max_episode_step=200, step_size=None):
+    def __init__(self,seed=None,render_mode = None,reward_type = "sparse",threshold = [0.5,np.deg2rad(30)],max_episode_step=200, step_size=None, stepDR=None):
 
         # Define action and observation space
-        super(SRC_approach, self).__init__(seed,render_mode,reward_type,threshold,max_episode_step, step_size)
+        super(SRC_approach, self).__init__(seed,render_mode,reward_type,threshold,max_episode_step, step_size, stepDR)
         self.psm_idx = 2
 
     def reset(self, seed=None, **kwargs):

@@ -3,9 +3,9 @@ from subtask_env import SRC_subtask
 
 class SRC_pullout(SRC_subtask):
 
-    def __init__(self,seed=None,render_mode = None,reward_type = "sparse",threshold = [0.5,np.deg2rad(30)],max_episode_step=200, step_size=np.array([0.0005, 0.0005, 0.0005, np.deg2rad(2), np.deg2rad(2), np.deg2rad(2), 0.05])):
+    def __init__(self,seed=None,render_mode = None,reward_type = "sparse",threshold = [0.5,np.deg2rad(30)],max_episode_step=200, step_size=np.array([0.0005, 0.0005, 0.0005, np.deg2rad(2), np.deg2rad(2), np.deg2rad(2), 0.05]), stepDR=None):
 
-        super(SRC_pullout, self).__init__(seed,render_mode,reward_type,threshold,max_episode_step, step_size)
+        super(SRC_pullout, self).__init__(seed,render_mode,reward_type,threshold,max_episode_step, step_size, stepDR)
         self.psm_idx = 1
 
     def reset(self, seed=None, **kwargs):

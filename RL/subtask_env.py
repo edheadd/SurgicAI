@@ -7,15 +7,19 @@ class SRC_subtask(gym.Env):
     """Custom Environment that follows gym interface"""
     metadata = {'render_modes': ['human'],"reward_type":['dense']}
 
-    def __init__(self, seed=None, render_mode=None, reward_type="sparse", threshold=[0.5, np.deg2rad(30)], max_episode_step=200, step_size=None):
+    def __init__(self, seed=None, render_mode=None, reward_type="sparse", threshold=[0.5, np.deg2rad(30)], max_episode_step=200, step_size=None, stepDR=None):
 
         # Define action and observation space
         super(SRC_subtask, self).__init__()
         self.random_range = np.array([0.0003, 0.002, np.pi / 6], dtype=np.float32)
         self.max_timestep = max_episode_step
         print(f"max episode length is {self.max_timestep}")
+        self.base_step_size = step_size
         self.step_size = step_size
         print(f"step size is {self.step_size}")
+        self.stepDR = (stepDR != None)
+        if self.stepDR:
+            print("State-Space Domain Randomization is enabled")
 
         if seed is not None:
             self.seed = seed 

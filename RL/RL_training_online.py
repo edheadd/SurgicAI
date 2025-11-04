@@ -49,7 +49,7 @@ def setup_environment(args):
     
     gym.envs.register(id=f"{args.algorithm}_{args.reward_type}", entry_point=SRC_class, max_episode_steps=max_episode_steps)
     env = gym.make(f"{args.algorithm}_{args.reward_type}", render_mode="human", reward_type=args.reward_type,
-                   max_episode_step=max_episode_steps, seed=args.seed, step_size=step_size, threshold=threshold)
+                   max_episode_step=max_episode_steps, seed=args.seed, step_size=step_size, threshold=threshold, stepDR=args.stepDR)
     return env, step_size, threshold, max_episode_steps
 
 def parse_arguments():
@@ -62,7 +62,9 @@ def parse_arguments():
     parser.add_argument('--seed', type=int, default=10, help='Random seed')
     parser.add_argument('--trans_error', type=float, required=True, help='Translational error threshold')
     parser.add_argument('--angle_error', type=float, required=True, help='Angular error threshold in degrees')
-    parser.add_argument('--randomization_params', type=str, default='0,0,0,0,0,0,0,0', help='Randomization parameters')
+    parser.add_argument('--randomization_params', type=str, default='0,0,0,0,0', help='Randomization parameters')
+    parser.add_argument('--gui', type=bool, default=False, help='Enable GUI for domain randomization')
+    parser.add_argument('--stepDR', type=bool, default=False, help='Enable state-space DR')
     return parser.parse_args()
 
 def run_training(args, env, domain_randomization_callback):
@@ -87,7 +89,15 @@ def run_training(args, env, domain_randomization_callback):
     model.learn(total_timesteps=args.total_timesteps, progress_bar=True, callback=callback_list, reset_num_timesteps=False)
     
     # Save the final model
-    save_path = f"{Base_directory}/{args.task_name}/{args.algorithm}/{args.reward_type}/seed_{args.seed}/final_model"
+    
+    if args.randomization_params == "0,0,0,0,0": 
+        randomization_str = "no_randomization"
+    elif args.stepDR:
+        randomization_str = "stepDR"
+    else:
+        randomization_str = "randomization"
+    
+    save_path = f"{Base_directory}/{args.task_name}/{args.algorithm}/{args.reward_type}/seed_{args.seed}/{randomization_str}/final_model"
     model.save(save_path)
     print(f"Final model saved to {save_path}")
 
@@ -95,8 +105,6 @@ def run_training(args, env, domain_randomization_callback):
 
 
 if __name__ == "__main__":
-    args = parse_arguments()
-    app = QApplication(sys.argv)
     
     args = parse_arguments()
     set_random_seed(args.seed)
@@ -105,10 +113,13 @@ if __name__ == "__main__":
     env, step_size, threshold, max_episode_steps = setup_environment(args)
 
     domain_randomization_callback = DomainRandomizationCallback(env, args.randomization_params, args.seed)
-    domain_randomization_callback.start_gui(app)
+    if args.gui:
+        app = QApplication(sys.argv)
+        domain_randomization_callback.start_gui(app)
 
     # Start RL training in a background thread
     training_thread = threading.Thread(target=run_training, args=(args, env, domain_randomization_callback,))
     training_thread.start()
 
-    sys.exit(app.exec_())
+    if args.gui:
+        sys.exit(app.exec_())
