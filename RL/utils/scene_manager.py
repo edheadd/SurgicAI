@@ -35,7 +35,8 @@ class SceneManager:
         self.psm2 = PSM(self.simulation_manager, 'psm2', add_joint_errors=False)
         self.psm_list = [self.psm1, self.psm2]
         self.ecm = ECM(self.simulation_manager, 'CameraFrame')
-        self.camera_view_reset()
+        self.base_camera_pose = self.ecm.camera_handle.get_pose()
+        self.camera_view_reset(True)
 
         # Initialize needle
         self.needle = NeedleInitialization(self.simulation_manager)
@@ -76,12 +77,32 @@ class SceneManager:
         self.psm_goal_list[1] = np.copy(self.init_psm2)
         self.psm_step(self.psm_goal_list[0], 1)
         self.psm_step(self.psm_goal_list[1], 2)
+
+        self.randomize_psm_pos()
+
         self.world_handle.reset()
-        self.camera_view_reset()
+        self.camera_view_reset(True)
         if self.stepDR:
             self.step_size_update()
             print("Randomized step size:", self.env.step_size)
         time.sleep(1.0)
+    
+    def randomize_psm_pos(self):
+        psm_random_range = np.array([0.005,  0.005, 0.005, 0.5, 0.5, 0.5, 0.3],dtype=np.float32)
+        # add random offsets in [-range, +range] for each DOF
+        noise0 = np.random.uniform(-psm_random_range, psm_random_range).astype(np.float32)
+        noise1 = np.random.uniform(-psm_random_range, psm_random_range).astype(np.float32)
+        self.psm_goal_list[0] = np.array(self.psm_goal_list[0], dtype=np.float32) + noise0
+        self.psm_goal_list[1] = np.array(self.psm_goal_list[1], dtype=np.float32) + noise1
+        # clamp jaw angles to a safe range (0.0 - 1.0)
+        self.psm_goal_list[0][-1] = float(np.clip(self.psm_goal_list[0][-1], 0.0, 1.0))
+        self.psm_goal_list[1][-1] = float(np.clip(self.psm_goal_list[1][-1], 0.0, 1.0))
+
+        print("Randomized PSM2 noise:", noise1)
+
+        self.psm_step(self.psm_goal_list[0], 1)
+        self.psm_step(self.psm_goal_list[1], 2)
+
     
     def step_size_update(self):
         """Update step size based on current randomization settings"""
@@ -95,7 +116,7 @@ class SceneManager:
 
     def camera_view_reset(self, reset_noise=False):
         """Reset camera view"""
-        camera_pose = self.ecm.camera_handle.get_pose()
+        camera_pose = self.base_camera_pose
         rotation = camera_pose.M
         base_vec = camera_pose.p
 
