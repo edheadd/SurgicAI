@@ -90,12 +90,12 @@ def run_training(args, env, domain_randomization_callback):
     
     # Save the final model
     
-    if args.randomization_params == "0,0,0,0,0": 
-        randomization_str = "no_randomization"
+    if args.randomization_params == "1,1,1,1,1": 
+        randomization_str = "randomization"
     elif args.stepDR:
         randomization_str = "stepDR"
     else:
-        randomization_str = "randomization"
+        randomization_str = "no_randomization"
     
     save_path = f"{Base_directory}/{args.task_name}/{args.algorithm}/{args.reward_type}/seed_{args.seed}/{randomization_str}/final_model"
     model.save(save_path)

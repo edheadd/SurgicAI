@@ -10,9 +10,9 @@ import torch
 
 gc.collect()
 torch.cuda.empty_cache()
-Base_directory = "/home/exie/SurgicAI/RL"
+Base_directory = "/home/exie3/SurgicAI/RL"
 
-def setup_environment(args):
+def setup_environment(args, test_env):
     max_episode_steps = 300
     trans_step = 1.0e-3
     angle_step = np.deg2rad(3)
@@ -26,9 +26,14 @@ def setup_environment(args):
     module = importlib.import_module(module_name)
     SRC_class = getattr(module, class_name)
     
+    if test_env == "stepDR_env":
+        stepDR = True
+    else:
+        stepDR = False
+
     gym.envs.register(id=f"{args.algorithm}_{args.reward_type}", entry_point=SRC_class, max_episode_steps=max_episode_steps)
     env = gym.make(f"{args.algorithm}_{args.reward_type}", render_mode="human", reward_type=args.reward_type,
-                   max_episode_step=max_episode_steps, seed=args.eval_seed, step_size=step_size, threshold=threshold)
+                   max_episode_step=max_episode_steps, seed=args.eval_seed, step_size=step_size, threshold=threshold, stepDR=stepDR)
     return env, step_size, threshold, max_episode_steps
 
 def parse_arguments():
@@ -39,7 +44,7 @@ def parse_arguments():
     parser.add_argument('--trans_error', type=float, required=True, help='Translational error threshold')
     parser.add_argument('--angle_error', type=float, required=True, help='Angular error threshold in degrees')
     parser.add_argument('--eval_seed', type=int, default=42, help='Fixed seed for evaluation')
-    parser.add_argument('--randomized', type=int, default=False, help='Whether to use environment was randomized during training')
+    parser.add_argument('--randomized', type=bool, default=False, help='Whether to use environment was randomized during training')
     parser.add_argument('--stepDR', type=bool, default=False, help='Enable step size domain randomization')
     return parser.parse_args()
 
@@ -84,7 +89,7 @@ def run_evaluation(env, model, num_episodes, max_episode_steps):
     
     return success_rate, avg_length, avg_timecost, all_lengths, all_timecosts
 
-def save_results(args, results, train_seeds):
+def save_results(args, results, train_seeds, test_env):
     results_dir = f"{Base_directory}/{args.task_name}/{args.algorithm}/{args.reward_type}/evaluation_results"
     os.makedirs(results_dir, exist_ok=True)
     
@@ -95,22 +100,24 @@ def save_results(args, results, train_seeds):
     else:
         randomization_str = "no_randomization"
     
-    # Save detailed results to txt file
-    txt_file = os.path.join(results_dir, f"{args.task_name}_{args.algorithm}_{args.reward_type}_{randomization_str}_results.txt")
+    # Save detailed results to txt file (include test environment to avoid overwriting)
+    safe_test_env = str(test_env)
+    txt_file = os.path.join(results_dir, f"{args.task_name}_{args.algorithm}_{args.reward_type}_{randomization_str}_{safe_test_env}_results.txt")
     with open(txt_file, 'w') as f:
         f.write(f"Task: {args.task_name}\n")
         f.write(f"Algorithm: {args.algorithm}\n")
         f.write(f"Reward Type: {args.reward_type}\n")
         f.write(f"Number of seeds: {len(train_seeds)}\n")
-        f.write(f"Evaluation seed: {args.eval_seed}\n\n")
+        f.write(f"Evaluation seed: {args.eval_seed}\n")
+        f.write(f"Test Environment: {test_env}\n")
         f.write("Results:\n")
         f.write(f"Success Rate: {results['mean_success_rate']:.2%} ± {results['std_success_rate']:.2%}\n")
         f.write(f"Average Trajectory Length: {results['mean_avg_length']:.2f} ± {results['std_avg_length']:.2f} mm\n")
-        f.write(f"Average Time Cost: {results['mean_avg_timecost']:.2f} ± {results['std_avg_timecost']:.2f} steps\n")
+        f.write(f"Average Time Cost: {results['mean_avg_timecost']:.2f} ± {results['std_avg_timecost']:.2f} steps\n\n\n")
     
     print(f"\nDetailed results saved to {txt_file}")
 
-    numbers_file = os.path.join(results_dir, f"{args.task_name}_{args.algorithm}_{args.reward_type}_{randomization_str}_numbers.txt")
+    numbers_file = os.path.join(results_dir, f"{args.task_name}_{args.algorithm}_{args.reward_type}_{randomization_str}_{safe_test_env}_numbers.txt")
     with open(numbers_file, 'w') as f:
         f.write(f"{results['mean_success_rate']} {results['std_success_rate']} ")
         f.write(f"{results['mean_avg_length']} {results['std_avg_length']} ")
@@ -122,53 +129,58 @@ def main():
     args = parse_arguments()
     set_random_seed(args.eval_seed)
     
-    env, step_size, threshold, max_episode_steps = setup_environment(args)
+    test_envs = ["base_env", "stepDR_env"]
     
-    train_seeds = [1, 10, 100, 1000, 10000]
-    all_success_rates = []
-    all_lengths = []
-    all_timecosts = []
-    
-    for train_seed in train_seeds:
-        model = load_model(args.algorithm, env, args.task_name, args.reward_type, train_seed, args.randomized, args.stepDR)
+    for test_env in test_envs:
+        print(f"\nEvaluating in environment: {test_env}")
+
+        env, step_size, threshold, max_episode_steps = setup_environment(args, test_env)
         
-        num_episodes = 20
-        success_rate, avg_length, avg_timecost, lengths, timecosts = run_evaluation(env, model, num_episodes, max_episode_steps)
+        train_seeds = [1, 10, 100, 1000, 10000]
+        all_success_rates = []
+        all_lengths = []
+        all_timecosts = []
         
-        all_success_rates.append(success_rate)
-        all_lengths.extend(lengths)
-        all_timecosts.extend(timecosts)
+        for train_seed in train_seeds:
+            model = load_model(args.algorithm, env, args.task_name, args.reward_type, train_seed, args.randomized, args.stepDR)
+            
+            num_episodes = 20
+            success_rate, avg_length, avg_timecost, lengths, timecosts = run_evaluation(env, model, num_episodes, max_episode_steps)
+            
+            all_success_rates.append(success_rate)
+            all_lengths.extend(lengths)
+            all_timecosts.extend(timecosts)
+            
+            print(f"\nEvaluation Results for model trained with seed {train_seed}:")
+            print(f"Success Rate: {success_rate:.2%}")
+            print(f"Average Trajectory Length: {avg_length:.2f} mm")
+            print(f"Average Time Cost: {avg_timecost:.2f} steps")
         
-        print(f"\nEvaluation Results for model trained with seed {train_seed}:")
-        print(f"Success Rate: {success_rate:.2%}")
-        print(f"Average Trajectory Length: {avg_length:.2f} mm")
-        print(f"Average Time Cost: {avg_timecost:.2f} steps")
-    
-    # Calculate mean and standard deviation across all seeds
-    mean_success_rate = np.mean(all_success_rates)
-    std_success_rate = np.std(all_success_rates)
-    mean_avg_length = np.mean(all_lengths)
-    std_avg_length = np.std(all_lengths)
-    mean_avg_timecost = np.mean(all_timecosts)
-    std_avg_timecost = np.std(all_timecosts)
-    
-    print("\nFinal Results Across All Seeds:")
-    print(f"Success Rate: {mean_success_rate:.2%} ± {std_success_rate:.2%}")
-    print(f"Average Trajectory Length: {mean_avg_length:.2f} ± {std_avg_length:.2f} mm")
-    print(f"Average Time Cost: {mean_avg_timecost:.2f} ± {std_avg_timecost:.2f} steps")
-    
-    results = {
-        'mean_success_rate': mean_success_rate,
-        'std_success_rate': std_success_rate,
-        'mean_avg_length': mean_avg_length,
-        'std_avg_length': std_avg_length,
-        'mean_avg_timecost': mean_avg_timecost,
-        'std_avg_timecost': std_avg_timecost
-    }
-    
-    save_results(args, results, train_seeds)
-    
-    env.close()
+        # Calculate mean and standard deviation across all seeds
+        mean_success_rate = np.mean(all_success_rates)
+        std_success_rate = np.std(all_success_rates)
+        mean_avg_length = np.mean(all_lengths)
+        std_avg_length = np.std(all_lengths)
+        mean_avg_timecost = np.mean(all_timecosts)
+        std_avg_timecost = np.std(all_timecosts)
+        
+        print("\nFinal Results Across All Seeds:")
+        print(f"Success Rate: {mean_success_rate:.2%} ± {std_success_rate:.2%}")
+        print(f"Average Trajectory Length: {mean_avg_length:.2f} ± {std_avg_length:.2f} mm")
+        print(f"Average Time Cost: {mean_avg_timecost:.2f} ± {std_avg_timecost:.2f} steps")
+        
+        results = {
+            'mean_success_rate': mean_success_rate,
+            'std_success_rate': std_success_rate,
+            'mean_avg_length': mean_avg_length,
+            'std_avg_length': std_avg_length,
+            'mean_avg_timecost': mean_avg_timecost,
+            'std_avg_timecost': std_avg_timecost
+        }
+
+        save_results(args, results, train_seeds, test_env)
+
+        env.close()
 
 if __name__ == "__main__":
     main()

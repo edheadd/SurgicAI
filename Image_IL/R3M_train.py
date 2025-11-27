@@ -22,8 +22,10 @@ view_name = args.view_name
 
 gc.collect()
 torch.cuda.empty_cache()
-data_dir = f'/home/jwu220/Trajectory_cloud/Five_task_v2/{task_name}'
-model_save_dir = f'/home/jwu220/Trajectory_cloud/IL_model_v2/{task_name}/R3M_{view_name}_view/Model'
+visDR=True
+stepDR=True
+data_dir = f'/home/exie3/SurgicAI/SurgicAI_Img_Data/{task_name}/{view_name}/visDR_{visDR}_stepDR_{stepDR}/TransitionEps'
+model_save_dir = f'/home/exie3/SurgicAI/IL_Models/{task_name}/R3m_{view_name}/visDR_{visDR}_stepDR_{stepDR}/Model'
 
 os.makedirs(model_save_dir, exist_ok=True)
 

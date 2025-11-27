@@ -1,7 +1,9 @@
+
 #!/bin/bash
 
 TIMESTEPS=150000
 RANDON="--randomization_params \"1,1,1,1,1\""
+STEPDR="--stepDR \"True\""
 
 run_exp() {
   local ALGO=$1
@@ -21,7 +23,7 @@ run_exp() {
       --trans_error \"$TRANS_ERROR\" \
       --angle_error \"$ANGLE_ERROR\" \
       --seed $SEED \
-      $RANDON"
+      $STEPDR"
   else
     CMD="python3 RL_training_online.py \
       --algorithm \"$ALGO\" \
@@ -56,8 +58,8 @@ SEEDS=(1 10 100 1000 10000)
 for TASK_INFO in "${TASKS[@]}"; do
   read TASK TRANS_ERROR ANGLE_ERROR <<< "$TASK_INFO"
   for REWARD in "${REWARDS[@]}"; do
-    for RAND in "${RANDS[@]}"; do
-      for SEED in "${SEEDS[@]}"; do
+    for SEED in "${SEEDS[@]}"; do
+      for RAND in "${RANDS[@]}"; do
         run_exp "PPO" "$TASK" "$REWARD" "$SEED" "$RAND" "$TRANS_ERROR" "$ANGLE_ERROR"
       done
     done
