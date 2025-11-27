@@ -11,7 +11,7 @@ class SRC_subtask(gym.Env):
 
         # Define action and observation space
         super(SRC_subtask, self).__init__()
-        self.random_range = np.array([0.0003, 0.002, np.pi / 6], dtype=np.float32)
+        self.random_range = np.array([0.0003, 0.0002, np.pi / 6], dtype=np.float32)
         self.max_timestep = max_episode_step
         print(f"max episode length is {self.max_timestep}")
         self.base_step_size = step_size
@@ -76,7 +76,7 @@ class SRC_subtask(gym.Env):
         desired_goal = self.obs["desired_goal"]
         distances_trans = np.linalg.norm(achieved_goal[0:3] - desired_goal[0:3])
         distances_angle = np.linalg.norm(achieved_goal[3:6] - desired_goal[3:6])
-        print(f"Distance to goal: translation {distances_trans}mm, rotation {np.rad2deg(distances_angle)} deg")
+        #print(f"Distance to goal: translation {distances_trans}mm, rotation {np.rad2deg(distances_angle)} deg")
         if (distances_trans<= self.threshold_trans) and (distances_angle <= self.threshold_angle):
             return True
         else:
