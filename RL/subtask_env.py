@@ -1,13 +1,17 @@
+import time
 import gymnasium as gym
 import numpy as np
+from utils import scene_manager
+from ros_abstraction_layer import ral
 from utils.gym_manager import GymManager
 from utils.scene_manager import SceneManager
+from utils.utils import convert_mat_to_frame, convert_mat_to_vector
 
 class SRC_subtask(gym.Env):
     """Custom Environment that follows gym interface"""
     metadata = {'render_modes': ['human'],"reward_type":['dense']}
 
-    def __init__(self, seed=None, render_mode=None, reward_type="sparse", threshold=[0.5, np.deg2rad(30)], max_episode_step=200, step_size=None, stepDR=None):
+    def __init__(self, seed=None, render_mode=None, reward_type="sparse", threshold=[0.5, np.deg2rad(30)], max_episode_step=200, step_size=None, stepDR=False):
 
         # Define action and observation space
         super(SRC_subtask, self).__init__()
@@ -17,7 +21,7 @@ class SRC_subtask(gym.Env):
         self.base_step_size = step_size
         self.step_size = step_size
         print(f"step size is {self.step_size}")
-        self.stepDR = (stepDR != None)
+        self.stepDR = stepDR
         if self.stepDR:
             print("State-Space Domain Randomization is enabled")
 
@@ -32,15 +36,23 @@ class SRC_subtask(gym.Env):
         self.threshold_trans = threshold[0]
         self.threshold_angle = threshold[1]
         print(f"Translation threshold: {self.threshold_trans}, angle threshold: {self.threshold_angle}")
+        
+        # init ral
+        ral_instance = ral("src_subtask_env")
+        time.sleep(0.5)  # Allow some time for RAL to initialize
+        
+        ral_instance.spin()  # Start RAL spinning to process callbacks
             
         self.gym_manager = GymManager(self, reward_type=reward_type, threshold=[threshold])
-        self.scene_manager = SceneManager(self)
+        self.scene_manager = SceneManager(self, ral_instance)
+        
         
         self.goal_obs = None
         self.obs = None
         self.info = None
         self.timestep = 0
         self.psm_idx = None
+        self.last_goal_rotation = [None, None]  # Cache last goal rotation to avoid Euler wrapping
                
         print("Initialized!!!")
         return
@@ -54,10 +66,29 @@ class SRC_subtask(gym.Env):
         Step function, defines the system dynamic and updates the observation
         """
         self.timestep += 1
-        action_step = action*self.step_size
-        self.scene_manager.psm_goal_list[self.psm_idx-1] = self.scene_manager.psm_goal_list[self.psm_idx-1]+action_step
+        
+        # Only update goal if action is non-zero
+        if np.any(action != 0):
+            # Get current measured pose and convert to vector once
+            measured_pose = self.scene_manager.psm_list[self.psm_idx-1].measured_cp()
+            current_obs = convert_mat_to_vector(measured_pose)
+            current_jaw = self.scene_manager.psm_list[self.psm_idx-1].get_jaw_angle()
+            goal_vector = np.append(current_obs, current_jaw)
+            
+            # On first action, cache the rotation; on subsequent actions, reuse it
+            if self.last_goal_rotation[self.psm_idx-1] is None:
+                self.last_goal_rotation[self.psm_idx-1] = goal_vector[3:6].copy()
+            else:
+                goal_vector[3:6] = self.last_goal_rotation[self.psm_idx-1]
+            
+            # Apply action directly to vector 
+            action_step = action * self.step_size
+            goal_vector = goal_vector + action_step
+            
+            self.scene_manager.psm_goal_list[self.psm_idx-1] = goal_vector
+        
+        # Step and update observation
         self.scene_manager.step()
-
         return self.gym_manager.update_observation(self.scene_manager.psm_goal_list[self.psm_idx-1])
 
     def render(self, mode='human', close=False):
@@ -67,18 +98,4 @@ class SRC_subtask(gym.Env):
         self.threshold_trans = difficulty_settings['trans_tolerance']
         self.threshold_angle = difficulty_settings['angle_tolerance']
         self.random_range = difficulty_settings['random_range']
-
-    def criteria(self):
-        """
-        Decide whether success criteria (Distance is lower than a threshold) is met.
-        """
-        achieved_goal = self.obs["achieved_goal"]
-        desired_goal = self.obs["desired_goal"]
-        distances_trans = np.linalg.norm(achieved_goal[0:3] - desired_goal[0:3])
-        distances_angle = np.linalg.norm(achieved_goal[3:6] - desired_goal[3:6])
-        #print(f"Distance to goal: translation {distances_trans}mm, rotation {np.rad2deg(distances_angle)} deg")
-        if (distances_trans<= self.threshold_trans) and (distances_angle <= self.threshold_angle):
-            return True
-        else:
-            return False
 

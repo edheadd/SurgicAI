@@ -18,9 +18,8 @@ class SRC_place(SRC_subtask):
         self.scene_manager.env_reset()
         self.scene_manager.needle_randomization()
 
-        self.scene_manager.psm2.actuators[0].actuate("Needle")
-        self.scene_manager.needle.needle.set_force([0.0,0.0,0.0])
-        self.scene_manager.needle.needle.set_torque([0.0,0.0,0.0])
+        self.scene_manager.psm2.actuate("Needle")
+        self.scene_manager.needle.release()
         self.entry_obs = self.scene_manager.place_entry_goal_evaluator(self.psm_idx)
         self.goal_obs = self.entry_obs
         current = self.scene_manager.psm_goal_list[self.psm_idx-1]

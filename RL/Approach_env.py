@@ -64,13 +64,11 @@ class SRC_approach(SRC_subtask):
                 min_angle = distances_angle
 
             if distances_trans <= self.threshold_trans and distances_angle <= self.threshold_angle and self.scene_manager.jaw_angle_list[self.psm_idx-1] <= 0.1:
-                needle_kin = self.scene_manager.needle_kin
-                print(f"Matched degree is {needle_kin.start_degree + idx * (needle_kin.end_degree - needle_kin.start_degree) / needle_kin.num_points}, distance_trans = {distances_trans}, distances_angle = {np.degrees(distances_angle)}")
+                print(f"Matched degree is {self.min_angle + idx * (self.max_angle - self.min_angle) / len(self.multigoal_obs)}, distance_trans = {distances_trans}, distances_angle = {np.degrees(distances_angle)}")
                 print("Attach the needle to the gripper")
                 
-                self.scene_manager.psm2.actuators[0].actuate("Needle")
-                self.scene_manager.needle.needle.set_force([0.0,0.0,0.0])
-                self.scene_manager.needle.needle.set_torque([0.0,0.0,0.0])
+                self.scene_manager.psm2.actuate("Needle")
+                self.scene_manager.needle.release()
                 return True
             
         self.min_trans = min_trans

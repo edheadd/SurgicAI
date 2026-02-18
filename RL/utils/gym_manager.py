@@ -48,7 +48,7 @@ class GymManager:
         
         self.env.obs = self.normalize_observation(obs_dict)
         self.reward = self.compute_reward(self.env.obs["achieved_goal"], self.env.obs["desired_goal"])
-        self.terminate = self.env.criteria()
+        self.terminate = self.criteria()
         self.truncate = self.env.timestep >= self.env.max_timestep
         self.env.info = {"is_success": self.terminate}
 
@@ -88,3 +88,19 @@ class GymManager:
                 0, -1
             )
         return float(rewards[0])
+    
+    
+    def criteria(self):
+        """
+        Decide whether success criteria (Distance is lower than a threshold) is met.
+        """
+        achieved_goal = self.env.obs["achieved_goal"]
+        desired_goal = self.env.obs["desired_goal"]
+        distances_trans = np.linalg.norm(achieved_goal[0:3] - desired_goal[0:3])
+        distances_angle = np.linalg.norm(achieved_goal[3:6] - desired_goal[3:6])
+        print(f"Distance to goal - Translation: {distances_trans:.4f} cm, Rotation: {np.rad2deg(distances_angle):.2f} degrees")
+        if (distances_trans<= self.env.threshold_trans) and (distances_angle <= self.env.threshold_angle):
+            return True
+        else:
+            return False
+
