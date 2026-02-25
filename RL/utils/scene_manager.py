@@ -20,7 +20,7 @@ class SceneManager:
         
         # step size DR manage
         self.stepDR = self.env.stepDR
-        self.pct = 0.5
+        self.pct = 1.0  # 100% variation for step size domain randomization
         
         # Initialize world manager
         self.world_manager = WorldManager(ral_instance)
@@ -70,13 +70,14 @@ class SceneManager:
     def env_reset(self):
         """Reset the simulation state"""
         self.needle.release()
+        time.sleep(0.5)
         self.psm1.deactuate()
         self.psm2.deactuate()
         self.psm_goal_list[0] = np.copy(self.init_psm1)
         self.psm_goal_list[1] = np.copy(self.init_psm2)
         self.psm_step(self.psm_goal_list[0], 1)
         self.psm_step(self.psm_goal_list[1], 2)
-
+        time.sleep(0.5)
         #self.randomize_psm_pos()
 
         self.world_manager.reset()        
