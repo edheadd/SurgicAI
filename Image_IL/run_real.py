@@ -122,8 +122,7 @@ for t in range(max_timesteps):
     
     # Get proprioceptive data from PSM
     measured_pose = psm.measured_cp()
-    current_obs = convert_mat_to_vector(measured_pose)
-    proprio_data = current_obs.astype(np.float32)
+    proprio_data = measured_pose.astype(np.float32)
     
     action = predict_action(model, current_images['front'], proprio_data).squeeze()
     action[0:3] = action[0:3] + np.random.uniform(-0.1, 0.1, size=action[0:3].shape)
@@ -151,8 +150,9 @@ for t in range(max_timesteps):
     Pitch = goal_vector[4]
     Yaw = goal_vector[5]
     
-    T_goal = Frame(Rotation.RPY(Roll, Pitch, Yaw), Vector(X, Y, Z))
-    psm.servo_cp(T_goal)
+    goal_cp = np.array([X, Y, Z, Roll, Pitch, Yaw])
+    print(f"Goal CP: {goal_cp}")
+    psm.servo_cp(goal_cp)
     
     time.sleep(0.1)  # Small delay between steps
     
