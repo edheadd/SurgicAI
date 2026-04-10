@@ -11,15 +11,13 @@ class PSM:
         self.name = name
         self.env = env
         self.ral_instance = ral_instance       
-        
-        self._kd = PSMKinematicSolver()
-        self.interpolater = Interpolation()        
+               
         self._thread_lock = Lock()
         self._cmd_lock = Lock()
         self._actuator_cmd_lock = Lock()
         self._state_lock = Lock()
         
-        self.measured_cp = None
+        self.m_cp = None
         self._cmd = None
         
         self._setup_ros_interface()
@@ -36,7 +34,8 @@ class PSM:
         x,y,z = msg.pose.position.x, msg.pose.position.y, msg.pose.position.z
         qx, qy, qz, qw = msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w
         rpy = quat2euler([qw, qx, qy, qz])
-        self.measured_cp = np.array([x, y, z, rpy[0], rpy[1], rpy[2]])
+        self.m_cp = np.array([x, y, z, rpy[0], rpy[1], rpy[2]])
+        print(self.m_cp)
 
     def servo_cp(self, goal_cp):
         with _psm_global_compute_lock, self._state_lock:
@@ -54,7 +53,7 @@ class PSM:
             _cmd.pose.orientation.w = qw
 
     def measured_cp(self):
-        return self.measured_cp
+        return self.m_cp
         
     def send_cmds(self):
         while True:

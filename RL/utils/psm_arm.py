@@ -56,6 +56,17 @@ class PSM:
         self.left_finger_ghost = self.ral_instance.subscriber(f'/{self.env}/ghosts/{self.name}/left_finger_ghost/State', GhostObjectState, self._left_finger_callback)
         self.right_finger_ghost = self.ral_instance.subscriber(f'/{self.env}/ghosts/{self.name}/right_finger_ghost/State', GhostObjectState, self._right_finger_callback)
 
+        
+        self.jaw_angle = 0.5
+        self.grasp_actuation_jaw_angle = 0.05
+        self.graspable_objs_prefix = ["Needle", "Thread", "Puzzle"]
+        self.grasped = [False]*len(self.graspable_objs_prefix) 
+        self.grasped_obj_name = None
+        self.left_finger_sensed_objs = []
+        self.right_finger_sensed_objs = []
+        
+        self._setup_ros_interface()
+        
     def _state_callback(self, msg):
         v = Vector(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
         quat = msg.pose.orientation

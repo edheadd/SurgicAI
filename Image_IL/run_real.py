@@ -41,10 +41,10 @@ class BehaviorCloningModel(nn.Module):
         super(BehaviorCloningModel, self).__init__()
         self.r3m = r3m
         self.regressor = nn.Sequential(
-            nn.BatchNorm1d(2048 + 6),
-            nn.Linear(2048 + 6, 256),
+            nn.BatchNorm1d(2048 + 7),
+            nn.Linear(2048 + 7, 256),
             nn.ReLU(),
-            nn.Linear(256, 6),
+            nn.Linear(256, 7),
             nn.Tanh()
         ).to(device)
 
@@ -74,7 +74,7 @@ def predict_action(model, image_np, proprio_data):
     
     with torch.no_grad():
         predicted_action = model(image, proprioceptive_tensor)
-    return predicted_action.cpu().numpy()
+    return predicted_action.cpu().numpy().astype(np.float64)
 
 current_images = {}
 image_received = {}
@@ -89,7 +89,7 @@ def image_callback(msg, camera_id="front"):
         pass
 
 camera_topics = {
-    view_name: f'/ambf/env/cameras/cameraL/ImageData' }
+    view_name: f'/jhu_daVinci/right/image_raw' }
 
 for cam_id, topic in camera_topics.items():
     ral_instance.subscriber(topic, RosImage, image_callback)
@@ -102,7 +102,7 @@ def wait_for_images():
     for key in image_received:
         image_received[key] = False
 
-model_path = f'/home/surgic-ai/SurgicAI/Image_IL/Approach/vis_dr/Model/model_final.pth'
+model_path = f'/home/xsun97/SurgicAI/Image_IL/Approach/base_env/Model/model_final.pth'
 model = load_r3m_model(model_path, r3m_model)
 
 trans_step = 1.0e-3
@@ -122,16 +122,17 @@ for t in range(max_timesteps):
     
     # Get proprioceptive data from PSM
     measured_pose = psm.measured_cp()
-    proprio_data = measured_pose.astype(np.float32)
-    
-    action = predict_action(model, current_images['front'], proprio_data).squeeze()
+    print(measured_pose)
+    measured_pose = np.append(measured_pose,0.0).astype(np.float64)
+    print(measured_pose)
+    action = predict_action(model, current_images['front'], measured_pose).squeeze()
     action[0:3] = action[0:3] + np.random.uniform(-0.1, 0.1, size=action[0:3].shape)
 
     print(f"Predicted action: {action}")
 
     # Only update goal if action is non-zero
     if np.any(action != 0):
-        goal_vector = proprio_data.copy()
+        goal_vector = measured_pose.copy()
         
         # On first action, cache the rotation; on subsequent actions, reuse it
         if goal_rotation_cache is None:
@@ -152,7 +153,7 @@ for t in range(max_timesteps):
     
     goal_cp = np.array([X, Y, Z, Roll, Pitch, Yaw])
     print(f"Goal CP: {goal_cp}")
-    psm.servo_cp(goal_cp)
+    # psm.servo_cp(goal_cp)
     
     time.sleep(0.1)  # Small delay between steps
     
