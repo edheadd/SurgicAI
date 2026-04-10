@@ -11,7 +11,7 @@ from surgical_robotics_challenge.ecm_arm import ECM
 from surgical_robotics_challenge.scene import Scene
 from surgical_robotics_challenge.simulation_manager import SimulationManager
 from surgical_robotics_challenge.utils.task3_init import NeedleInitialization
-from RL.utils.needle_kinematics import NeedleKinematics
+from RL.utils.needle import NeedleKinematics
 from surgical_robotics_challenge.kinematics.psmKinematics import *
 
 

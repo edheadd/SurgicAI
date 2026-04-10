@@ -47,7 +47,7 @@ class GymManager:
         }
         
         self.env.obs = self.normalize_observation(obs_dict)
-        self.reward = self.compute_reward(self.env.obs["achieved_goal"], self.env.obs["desired_goal"])
+        self.reward = self.env.compute_reward(self.env.obs["achieved_goal"], self.env.obs["desired_goal"])
         self.terminate = self.env.criteria()
         self.truncate = self.env.timestep >= self.env.max_timestep
         self.env.info = {"is_success": self.terminate}
@@ -70,21 +70,3 @@ class GymManager:
         observation_dict["desired_goal"] = np.array(desired_goal * multiplier2, dtype=np.float32)
         
         return observation_dict
-    
-    def compute_reward(self, achieved_goal, desired_goal, info=None):
-        """Calculate reward based on current state"""
-        goal_len = 7
-        achieved_goal = np.array(achieved_goal).reshape(-1, goal_len)
-        desired_goal = np.array(desired_goal).reshape(-1, goal_len)
-        
-        distances_trans = np.linalg.norm(achieved_goal[:, 0:3] - desired_goal[:, 0:3], axis=1)
-        distances_angle = np.linalg.norm(achieved_goal[:, 3:6] - desired_goal[:, 3:6], axis=1)
-        
-        if self.reward_type == "dense":
-            rewards = -(distances_trans/100 + distances_angle/10)
-        else:  # sparse
-            rewards = np.where(
-                (distances_trans <= self.env.threshold_trans) & (distances_angle <= self.env.threshold_angle),
-                0, -1
-            )
-        return float(rewards[0])

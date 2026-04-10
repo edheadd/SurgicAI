@@ -28,14 +28,15 @@ def teleop_loop():
 
     threshold = [3,np.deg2rad(30)]
 
-    env = SRC_approach(step_size=step_size, threshold=threshold)
-    #env = SRC_insert(step_size=step_size, threshold=threshold)
+    #env = SRC_approach(step_size=step_size, threshold=threshold)
+    #env.scene_manager.approach_and_grasp() 
+    env = SRC_insert(step_size=step_size, threshold=threshold)
     #env = SRC_regrasp(step_size=step_size, threshold=threshold)
     #env = SRC_pullout(step_size=step_size, threshold=threshold)
     env.reset()
 
     running = True
-    clock = pygame.time.Clock()
+    #clock = pygame.time.Clock()
 
     while running:
         action = np.zeros(7, dtype=np.float32)
@@ -45,11 +46,11 @@ def teleop_loop():
                 running = False
 
         keys = pygame.key.get_pressed()
+        keys_pressed = [k for k, (idx, val) in KEY2ACTION.items() if keys[k]]
+        
         for key, (idx, val) in KEY2ACTION.items():
             if keys[key]:
                 action[idx] = val
-
-        
 
         if keys[pygame.K_ESCAPE]:
             running = False
@@ -60,7 +61,7 @@ def teleop_loop():
             time.sleep(20)
             env.reset()
 
-        clock.tick(50)
+        #clock.tick(20)  # 20 Hz
 
     env.close()
     pygame.quit()

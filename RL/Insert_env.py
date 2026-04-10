@@ -41,8 +41,6 @@ class SRC_insert(SRC_subtask):
         self.action = action
         current = self.scene_manager.psm_goal_list[self.psm_idx-1]
         action_step = action*self.step_size
-        self.scene_manager.world_handle.update()
-
 
         self.scene_manager.psm_goal_list[self.psm_idx-1] = np.clip(current+action_step, self.action_lims_low[0:7], self.action_lims_high[0:7])
         self.scene_manager.psm_step(self.scene_manager.psm_goal_list[self.psm_idx-1] ,self.psm_idx)

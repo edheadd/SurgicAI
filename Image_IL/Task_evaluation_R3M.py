@@ -10,7 +10,7 @@ from PIL import Image
 import numpy as np
 import cv2
 from cv_bridge import CvBridge
-import rospy
+from ros_abstraction_layer import ral
 from sensor_msgs.msg import Image as RosImage
 import gymnasium as gym
 from stable_baselines3.common.utils import set_random_seed
@@ -19,6 +19,8 @@ from r3m import load_r3m
 import argparse
 import os
 import importlib
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../RL"))
+from Domain_randomization.Domain_callback import DomainRandomizationCallback
 
 parser = argparse.ArgumentParser(description='Behavior Cloning Testing')
 parser.add_argument('--task_name', type=str, required=True, help='Name of the task')
@@ -30,6 +32,9 @@ args = parser.parse_args()
 task_name = args.task_name
 view_name = args.view_name
 
+ral_instance = ral("image_record_node")
+ral_instance.spin()  # Start RAL spinning to process callbacks
+time.sleep(0.5)  # Allow some time for RAL to initialize
 
 module_name = f"{args.task_name.capitalize()}_env"
 class_name = f"SRC_{args.task_name.lower()}"
@@ -92,39 +97,42 @@ current_images = {}
 image_received = {}
 bridge = CvBridge()
 
-def image_callback(msg, camera_id):
+def image_callback(msg, camera_id="front"):
     global current_images, image_received
     try:
         current_images[camera_id] = bridge.imgmsg_to_cv2(msg, "bgr8")
         image_received[camera_id] = True
     except Exception as e:
-        rospy.logerr(f"Failed to convert image from {camera_id}: {e}")
+        pass
+        #rospy.logerr(f"Failed to convert image from {camera_id}: {e}")
 
 camera_topics = {
     view_name: f'/ambf/env/cameras/cameraL/ImageData' if view_name == 'front' else '/ambf/env/cameras/normal_camera/ImageData'
 }
 
 for cam_id, topic in camera_topics.items():
-    rospy.Subscriber(topic, RosImage, image_callback, callback_args=cam_id)
+    ral_instance.subscriber(topic, RosImage, image_callback)
     image_received[cam_id] = False
 
 def wait_for_images():
-    rate = rospy.Rate(100)
-    while not all(image_received.values()) and not rospy.is_shutdown():
+    rate = ral_instance.create_rate(100)
+    while not all(image_received.values()) and not ral_instance.is_shutdown():
         rate.sleep()
     for key in image_received:
         image_received[key] = False
 
-model_path = f'/home/jwu220/Trajectory_cloud/IL_model_v2/{task_name}/R3M_{view_name}_view/Model/model_final.pth'
+#model_path = f'/home/jwu220/Trajectory_cloud/IL_model_v2/{task_name}/R3M_{view_name}_view/Model/model_final.pth'
+model_path = f'/home/surgic-ai/SurgicAI/Image_IL/Approach/vis_dr/Model/model_final.pth'
 model = load_r3m_model(model_path, r3m_model)
 
 seed = 60
 set_random_seed(seed)
-max_episode_steps = 200
-trans_step = 5e-4
-angle_step = np.deg2rad(2)
-jaw_step = 0.05
+max_episode_steps = 100
 threshold = [args.trans_error,np.deg2rad(args.angle_error)]
+
+trans_step = 1.0e-3
+angle_step = np.deg2rad(3)
+jaw_step = 0.3
 step_size = np.array([trans_step, trans_step, trans_step, angle_step, angle_step, angle_step, jaw_step], dtype=np.float32)
 
 gym.envs.register(id="SAC_HER_sparse", entry_point=SRC_test, max_episode_steps=max_episode_steps)
@@ -134,10 +142,16 @@ all_trajectory_lengths = []
 all_time_costs = []
 success_rates = []
 
+dr = True
+
 def run_experiment(num_episodes=20):
     total_length = 0
     total_timecost = 0
     total_success = 0
+
+    if dr:
+        domain_randomization_callback = DomainRandomizationCallback(env)
+        domain_randomization_callback.start_thread()
     
     for episode in range(num_episodes):
         obs, _ = env.reset()
@@ -148,8 +162,8 @@ def run_experiment(num_episodes=20):
             proprio_data = obs["observation"][0:7]
             action = predict_action(model, current_images[view_name], proprio_data).squeeze()
             action[0:3] = action[0:3] + np.random.uniform(-0.1, 0.1, size=action[0:3].shape)
-            if is_grasp:
-                action[-1] = 0.0
+            # if is_grasp:
+            #     action[-1] = 0.0
             next_obs, reward, done, _, info = env.step(action)
             trajectory_length += np.linalg.norm(action[0:3] * trans_step * 1000)
             time.sleep(0.01)
@@ -168,6 +182,8 @@ def run_experiment(num_episodes=20):
     success_rate = total_success / num_episodes
     avg_length = total_length / total_success if total_success > 0 else 0
     avg_timecost = total_timecost / total_success if total_success > 0 else 0
+    if dr:
+        domain_randomization_callback._on_training_end()
     return success_rate, avg_length, avg_timecost
 
 num_experiments = 3
@@ -192,9 +208,10 @@ print(f"Success Rate: {mean_success_rate:.2%} ± {std_success_rate:.2%}")
 print(f"Average Trajectory Length: {mean_avg_length:.2f} ± {std_avg_length:.2f} mm")
 print(f"Average Time Cost: {mean_avg_timecost:.2f} ± {std_avg_timecost:.2f} steps")
 
-results_dir = f"/home/jwu220/Trajectory_cloud/IL_model_v2/{task_name}/R3M_{view_name}_view/Results"
+#results_dir = f"/home/jwu220/Trajectory_cloud/IL_model_v2/{task_name}/R3M_{view_name}_view/Results"
+results_dir = f"/home/surgic-ai/SurgicAI/Image_IL/Approach/vis_dr/Results"
 os.makedirs(results_dir, exist_ok=True)
-results_file = os.path.join(results_dir, f"{task_name}_{view_name}_results.txt")
+results_file = os.path.join(results_dir, f"{task_name}_{view_name}_dr{dr}_results.txt")
 
 with open(results_file, 'w') as f:
     f.write(f"Task: {task_name}\n")

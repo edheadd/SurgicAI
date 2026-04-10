@@ -32,6 +32,9 @@ class SRC_approach(SRC_subtask):
         self.init_obs_dict = {"observation":self.init_obs_array,"achieved_goal":current_pos,"desired_goal":self.goal_obs}
 
         self.obs = self.gym_manager.normalize_observation(self.init_obs_dict)
+
+        # self.grasp_success = False
+        # self.horizon = 0
         
         self.info = {"is_success":False}
         print("reset!!!")
@@ -52,9 +55,11 @@ class SRC_approach(SRC_subtask):
 
         min_trans = np.Inf
         min_angle = np.Inf
+        printed = False
         
         for idx, desired_goal in enumerate(self.multigoal_obs):
             desired_goal = desired_goal*np.array([100,100,100,1,1,1,1])
+            
             distances_trans = np.linalg.norm(achieved_goal[:3] - desired_goal[:3])
             distances_angle = np.linalg.norm(achieved_goal[3:6] - desired_goal[3:6])
             
@@ -63,19 +68,52 @@ class SRC_approach(SRC_subtask):
             if min_angle > distances_angle:
                 min_angle = distances_angle
 
-            if distances_trans <= self.threshold_trans and distances_angle <= self.threshold_angle and self.scene_manager.jaw_angle_list[self.psm_idx-1] <= 0.1:
-                needle_kin = self.scene_manager.needle_kin
-                print(f"Matched degree is {needle_kin.start_degree + idx * (needle_kin.end_degree - needle_kin.start_degree) / needle_kin.num_points}, distance_trans = {distances_trans}, distances_angle = {np.degrees(distances_angle)}")
+            # if self.timestep % 100 == 0 and not printed:
+            #     print("distances_trans: ", distances_trans)
+            #     print("distances_angle", distances_angle)
+            #     print("jaw_angle", self.scene_manager.jaw_angle_list[self.psm_idx-1])
+            #     printed = True
+
+            if distances_trans <= self.threshold_trans and distances_angle <= self.threshold_angle: #and self.scene_manager.jaw_angle_list[self.psm_idx-1] <= 0.2:
+                print(f"Matched degree is {self.min_angle + idx * (self.max_angle - self.min_angle) / len(self.multigoal_obs)}, distance_trans = {distances_trans}, distances_angle = {np.degrees(distances_angle)}")
                 print("Attach the needle to the gripper")
                 
-                self.scene_manager.psm2.actuators[0].actuate("Needle")
-                self.scene_manager.needle.needle.set_force([0.0,0.0,0.0])
-                self.scene_manager.needle.needle.set_torque([0.0,0.0,0.0])
+                self.scene_manager.psm2.actuate("Needle")
+                self.scene_manager.needle.release()
+
                 return True
+
+                # self.grasp_success = True
+                # self.horizon = 20
+        
+        # if not self.horizon == 0:
+        #     self.horizon = self.horizon-1
+        #     if self.horizon == 0:
+        #         return self.grasp_success
             
         self.min_trans = min_trans
         self.min_angle = min_angle    
         return False
     
+    def compute_reward(self, achieved_goal, desired_goal, info=None):
+        """Calculate reward based on current state"""
+        goal_len = 7
+        achieved_goal = np.array(achieved_goal).reshape(-1, goal_len)
+        desired_goal = np.array(desired_goal).reshape(-1, goal_len)
+        
+        distances_trans = np.linalg.norm(achieved_goal[:, 0:3] - desired_goal[:, 0:3], axis=1)
+        distances_angle = np.linalg.norm(achieved_goal[:, 3:6] - desired_goal[:, 3:6], axis=1)
 
+        in_region = (distances_trans <= self.threshold_trans) & (distances_angle <= self.threshold_angle)
+        grasp_zone_reward = np.where(in_region, 0.5, 0.0)
+
+        
+        if self.reward_type == "dense":
+            rewards = -(distances_trans/100 + distances_angle/10) + grasp_zone_reward
+        else:  # sparse
+            rewards = np.where(
+                (distances_trans <= self.env.threshold_trans) & (distances_angle <= self.env.threshold_angle),
+                0, -1
+            )
+        return np.asarray(rewards, dtype=np.float32)
 
