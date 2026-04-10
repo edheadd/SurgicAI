@@ -107,7 +107,7 @@ model = load_r3m_model(model_path, r3m_model)
 
 trans_step = 1.0e-3
 angle_step = np.deg2rad(3)
-step_size = np.array([trans_step, trans_step, trans_step, angle_step, angle_step, angle_step], dtype=np.float32)
+step_size = np.array([trans_step, trans_step, trans_step, angle_step, angle_step, angle_step,0.0], dtype=np.float32)
 
 max_timesteps = 100
 
@@ -121,10 +121,12 @@ for t in range(max_timesteps):
     wait_for_images()
     
     # Get proprioceptive data from PSM
+    while psm.measured_cp() is None and not ral_instance.is_shutdown():
+        print("Waiting for /PSM2/measured_cp ...")
+        time.sleep(0.05)
     measured_pose = psm.measured_cp()
-    print(measured_pose)
     measured_pose = np.append(measured_pose,0.0).astype(np.float64)
-    print(measured_pose)
+    print(f"measured pose: {measured_pose}")
     action = predict_action(model, current_images['front'], measured_pose).squeeze()
     action[0:3] = action[0:3] + np.random.uniform(-0.1, 0.1, size=action[0:3].shape)
 

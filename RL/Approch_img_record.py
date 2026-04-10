@@ -45,7 +45,8 @@ def image_callback(msg, camera_id):
 # }
 
 camera_topics = {
-    'front': '/ambf/env/cameras/cameraL/ImageData'
+    'front': '/ambf/env/cameras/cameraL/ImageData'l CP: [-0.0203588   0.01668136  0.06973077 -0.9696032  -0.22117775  1.36732219]
+
 }
 
 for cam_id, topic in camera_topics.items():
@@ -73,7 +74,8 @@ def save_images(episode,timestep, save_dir=f'/home/surgic-ai/SurgicAI/RL/Approac
 
 
 
-def policy(obs,action_dim,time_step,env,noise=None):
+def policy(obs,action_dim,time_step,env,noise=None):l CP: [-0.0203588   0.01668136  0.06973077 -0.9696032  -0.22117775  1.36732219]
+
     obs_dict = obs
     current = obs_dict['achieved_goal']
     goal = obs_dict['desired_goal']

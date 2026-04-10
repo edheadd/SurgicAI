@@ -50,7 +50,7 @@ class SRC_subtask(gym.Env):
         self.goal_obs = None
         self.obs = None
         self.info = None
-        self.timestep = 0
+        self.timestep = 0action
         self.psm_idx = None
         self.last_goal_rotation = [None, None]  # Cache last goal rotation to avoid Euler wrapping
                

@@ -35,7 +35,6 @@ class PSM:
         qx, qy, qz, qw = msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w
         rpy = quat2euler([qw, qx, qy, qz])
         self.m_cp = np.array([x, y, z, rpy[0], rpy[1], rpy[2]])
-        print(self.m_cp)
 
     def servo_cp(self, goal_cp):
         with _psm_global_compute_lock, self._state_lock:
