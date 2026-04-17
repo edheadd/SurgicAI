@@ -12,14 +12,11 @@ class PSM:
         self.env = env
         self.ral_instance = ral_instance       
         
-        self._kd = PSMKinematicSolver()
-        self.interpolater = Interpolation()        
-        self._thread_lock = Lock()
+        self._kd = PSMKinematicSolver() 
         self._cmd_lock = Lock()
-        self._actuator_cmd_lock = Lock()
         self._state_lock = Lock()
         
-        self.measured_cp = None
+        self.m_cp = None
         self._cmd = None
         
         self._setup_ros_interface()
@@ -29,14 +26,17 @@ class PSM:
 
     def _setup_ros_interface(self):
         self.psm_pub = self.ral_instance.publisher('/PSM2/servo_cp', PoseStamped, queue_size=1)
-        self.psm_sub = self.ral_instance.subscriber('/PSM2/measured_cp', PoseStamped, self._state_callback)
-
+        #self.psm_sub = self.ral_instance.subscriber('/PSM2/measured_cp', PoseStamped, self._state_callback)
+        self.psm_sub = self.ral_instance.subscriber('/PSM2/measured_jp', PoseStamped, self._state_callback)
+        
     def _state_callback(self, msg):
         # updated measured pose
-        x,y,z = msg.pose.position.x, msg.pose.position.y, msg.pose.position.z
-        qx, qy, qz, qw = msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w
-        rpy = quat2euler([qw, qx, qy, qz])
-        self.measured_cp = np.array([x, y, z, rpy[0], rpy[1], rpy[2]])
+        # x,y,z = msg.pose.position.x, msg.pose.position.y, msg.pose.position.z
+        # qx, qy, qz, qw = msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w
+        # rpy = quat2euler([qw, qx, qy, qz])
+        # self.measured_cp = np.array([x, y, z, rpy[0], rpy[1], rpy[2]])
+        measured_jp = np.array([msg.pose.position.x, msg.pose.position.y, msg.pose.position.z, msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z])
+        self.m_cp = self._kd.forward_kinematics(measured_jp)
 
     def servo_cp(self, goal_cp):
         with _psm_global_compute_lock, self._state_lock:
@@ -54,8 +54,8 @@ class PSM:
             _cmd.pose.orientation.w = qw
 
     def measured_cp(self):
-        return self.measured_cp
-        
+        return self.m_cp
+
     def send_cmds(self):
         while True:
             with self._cmd_lock:
