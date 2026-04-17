@@ -28,7 +28,7 @@ class GymManager:
                 high=np.array([np.inf]*7, dtype=np.float32),
                 shape=(7,), dtype=np.float32),
             "desired_goal": spaces.Box(
-                low=np.array([-np.inf]*7, dtype=np.float32),
+                low=np.array([-np.inf]*7, dtype=np.actionactionfloat32),
                 high=np.array([np.inf]*7, dtype=np.float32),
                 shape=(7,), dtype=np.float32)              
         })

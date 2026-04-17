@@ -58,7 +58,7 @@ class PSM:
 
     def _state_callback(self, msg):
         v = Vector(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
-        quat = msg.pose.orientation
+        quat = m,JointStatesg.pose.orientation
         rpy = quat2euler([quat.w, quat.x, quat.y, quat.z])
         r = Rotation.RPY(rpy[0], rpy[1], rpy[2])
         with self._state_lock:
@@ -68,7 +68,7 @@ class PSM:
             self._measured_jv = list(msg.joint_velocities)[:6]
             self.jaw_angle = msg.joint_positions[6]  # Jaw angle at index 6
             self.orientation = msg.pose.orientation
-        if self._cmd is None:
+        if self.,JointState_cmd is None:
             self.servo_jp(self._measured_jp)
         
     def _left_finger_callback(self, msg):

@@ -41,10 +41,10 @@ class BehaviorCloningModel(nn.Module):
         super(BehaviorCloningModel, self).__init__()
         self.r3m = r3m
         self.regressor = nn.Sequential(
-            nn.BatchNorm1d(2048 + 6),
-            nn.Linear(2048 + 6, 256),
+            nn.BatchNorm1d(2048 + 7),
+            nn.Linear(2048 + 7, 256),
             nn.ReLU(),
-            nn.Linear(256, 6),
+            nn.Linear(256, 7),
             nn.Tanh()
         ).to(device)
 
@@ -78,6 +78,7 @@ def predict_action(model, image_np, proprio_data):
 
 current_images = {}
 image_received = {}
+
 bridge = CvBridge()
 
 def image_callback(msg, camera_id="front"):
@@ -89,7 +90,7 @@ def image_callback(msg, camera_id="front"):
         pass
 
 camera_topics = {
-    view_name: f'/ambf/env/cameras/cameraL/ImageData' }
+    view_name: f'/jhu_daVinci/right/image_raw' }
 
 for cam_id, topic in camera_topics.items():
     ral_instance.subscriber(topic, RosImage, image_callback)
@@ -102,12 +103,12 @@ def wait_for_images():
     for key in image_received:
         image_received[key] = False
 
-model_path = f'/home/surgic-ai/SurgicAI/Image_IL/Approach/vis_dr/Model/model_final.pth'
+model_path = f'/home/xsun97/SurgicAI/Image_IL/Approach/vis_dr/Model/model_final.pth'
 model = load_r3m_model(model_path, r3m_model)
 
 trans_step = 1.0e-3
 angle_step = np.deg2rad(3)
-step_size = np.array([trans_step, trans_step, trans_step, angle_step, angle_step, angle_step], dtype=np.float32)
+step_size = np.array([trans_step, trans_step, trans_step, angle_step, angle_step, angle_step,0.0], dtype=np.float32)
 
 max_timesteps = 100
 
@@ -121,8 +122,13 @@ for t in range(max_timesteps):
     wait_for_images()
     
     # Get proprioceptive data from PSM
+    while psm.measured_cp() is None and not ral_instance.is_shutdown():
+        print("Waiting for /PSM2/measured_cp ...")
+        time.sleep(0.05)
     measured_pose = psm.measured_cp()
-    proprio_data = measured_pose.astype(np.float32)
+    proprio_data = convert_mat_to_vector(measured_pose).astype(np.float64)
+    proprio_data = np.append(proprio_data,0.0)
+    print(f"Proprio data: {proprio_data}")
     
     action = predict_action(model, current_images['front'], proprio_data).squeeze()
     action[0:3] = action[0:3] + np.random.uniform(-0.1, 0.1, size=action[0:3].shape)
@@ -150,9 +156,9 @@ for t in range(max_timesteps):
     Pitch = goal_vector[4]
     Yaw = goal_vector[5]
     
-    goal_cp = np.array([X, Y, Z, Roll, Pitch, Yaw])
-    print(f"Goal CP: {goal_cp}")
-    psm.servo_cp(goal_cp)
+    goal_frame = Frame(Rotation.RPY(Roll, Pitch, Yaw), Vector(X, Y, Z))
+    print(f"goal_frame: {goal_frame}")
+    psm.servo_cp(goal_frame)
     
     time.sleep(0.1)  # Small delay between steps
     
