@@ -13,12 +13,12 @@ from cv_bridge import CvBridge
 from ros_abstraction_layer import ral
 import os
 import cv2
-#from Domain_randomization.Domain_callback import DomainRandomizationCallback
+from Domain_randomization.Domain_callback import DomainRandomizationCallback
 
 
 
 randomize_env = False
-randomize_step_size = False
+randomize_step_size = True
 
 current_images = {}
 image_received = {}
@@ -60,7 +60,7 @@ def wait_for_images():
     for key in image_received:
         image_received[key] = False
 
-def save_images(episode,timestep, save_dir=f'/home/exie/SurgicAI/RL/Approach_td3_test/ImgData/'):
+def save_images(episode,timestep, save_dir=f'/home/exie/SurgicAI/RL/Approach_td3_data/ImgData/'):
     """Save images with timestamps to a directory."""
     os.makedirs(save_dir, exist_ok=True)
     for cam_id, img in current_images.items():
@@ -126,14 +126,14 @@ min_action = [float('inf')] * action_dim
 average_time_step = 0
 
 
-#visualDRCallback = DomainRandomizationCallback(env=env.unwrapped, randomization_args="1,1,1,1,1")
+visualDRCallback = DomainRandomizationCallback(env=env.unwrapped, randomization_args="0,0,1,1,1")
 
 env.reset()
 
-
+visualDRCallback.start_thread()
 
 #base_directory = f"/home/exie3/SurgicAI/SurgicAI_Img_Data/Approach/SingeCam/visDR_{randomize_env}_stepDR_{randomize_step_size}/TransitionEps/"
-base_directory = f"/home/exie/SurgicAI/RL/Approach_td3_test/TransitionEps/"
+base_directory = f"/home/exie/SurgicAI/RL/Approach_td3_data/TransitionEps/"
 
 def save_transitions_episode(transitions, episode_index, base_directory):
     # Ensure the directory exists
@@ -160,13 +160,32 @@ while episode < num_episodes:
     noise = None
     episode_transitions = []
 
-    for timestep in range(max_episode_steps):
-        wait_for_images()
-        save_images(episode,timestep)
 
-        action,noise = policy(obs,action_dim,timestep,env.unwrapped,noise)
+    for timestep in range(max_episode_steps):
+        # If step limit exceeded, clean up and restart immediately
+        if timestep > 100:
+            print(f"Episode {episode} exceeded 100 steps at timestep {timestep}, deleting saved data and retrying...")
+            # Delete episode pickle file (if any)
+            episode_pkl = os.path.join(base_directory, f"episode_{episode}.pkl")
+            if os.path.exists(episode_pkl):
+                os.remove(episode_pkl)
+            # Delete images for this episode
+            img_dir = f"/home/exie/SurgicAI/RL/Approach_td3_data/ImgData/"
+            for cam_id in camera_topics.keys():
+                for ts in range(timestep + 1):
+                    img_path = os.path.join(img_dir, f"{cam_id}_image_ts{ts}_ep{episode}.png")
+                    if os.path.exists(img_path):
+                        os.remove(img_path)
+            # Restart episode (do not increment episode)
+            break
+
+        wait_for_images()
+        save_images(episode, timestep)
+
+        action, noise = policy(obs, action_dim, timestep, env.unwrapped, noise)
+        print(action)
         next_obs, reward, done, _, info = env.step(action)
-        
+
         time.sleep(0.01)
 
         transition = {
@@ -179,17 +198,12 @@ while episode < num_episodes:
             "images": {cam_id: img for cam_id, img in current_images.items()}
         }
         episode_transitions.append(transition)
-        
+
         obs = next_obs
         if done:
             print(timestep)
-
-            if timestep > 200:
-                print(f"Episode {episode} took too long ({timestep} steps), retrying...")
-                break
-            
             average_time_step += timestep
-            success+=1
+            success += 1
             save_transitions_episode(episode_transitions, episode, base_directory)
             episode += 1
             break
@@ -224,7 +238,8 @@ def save_transitions_batch(transitions, batch_index, base_directory):
 
 batch_size = 50
 # base_directory = "/home/jin/migoogledrive/SRC_img_data/Approach/Multi_view"
-base_directory = f"/home/exie/SurgicAI/SurgicAI_Img_Data/Approach/SingeCam/visDR_{randomize_env}_stepDR_{randomize_step_size}/TransitionBatch/"
+#base_directory = f"/home/exie/SurgicAI/SurgicAI_Img_Data/Approach/SingeCam/visDR_{randomize_env}_stepDR_{randomize_step_size}/TransitionBatch/"
+base_directory = f"/home/exie/SurgicAI/RL/Approach_td3_data/TransitionBatch/"
 
 os.makedirs(base_directory, exist_ok=True)
 current_batch = []
@@ -240,7 +255,7 @@ for timestep, transition in enumerate(episode_transitions):
 
 
 #filename = f"/home/exie3/SurgicAI/SurgicAI_Img_Data/Approach/SingeCam/visDR_{randomize_env}_stepDR_{randomize_step_size}/Expert_"+str(num_episodes)+".pkl"
-filename = f"/home/exie/SurgicAI/RL/Approach_td3_test/Expert_"+str(num_episodes)+".pkl"
+filename = f"/home/exie/SurgicAI/RL/Approach_td3_data/Expert_"+str(num_episodes)+".pkl"
 
 
 # 使用 'wb' 模式打开文件以写入二进制数据
@@ -255,6 +270,23 @@ data_dict = {
     "max_timestep": 3*average_time_step
 }
 #pickle_file_path = f"/home/exie3/SurgicAI/SurgicAI_Img_Data/Approach/SingeCam/visDR_{randomize_env}_stepDR_{randomize_step_size}/img_env_info.pkl"
-pickle_file_path = f"/home/exie/SurgicAI/RL/Approach_td3_test/img_env_info.pkl"
+pickle_file_path = f"/home/exie/SurgicAI/RL/Approach_td3_data/img_env_info.pkl"
 with open(pickle_file_path, 'wb') as file:
     pickle.dump(data_dict, file)
+
+
+
+# Merge all episode_*.pkl files in the directory into one big list (no glob needed)
+episodes_dir = "/home/exie/SurgicAI/RL/Approach_td3_data/TransitionEps/"
+merged_pickle_path = "/home/exie/SurgicAI/RL/Approach_td3_data/all_episodes_merged.pkl"
+all_transitions = []
+episode_files = [f for f in os.listdir(episodes_dir) if f.startswith("episode_") and f.endswith(".pkl")]
+episode_files = sorted(episode_files, key=lambda x: int(x.split('_')[1].split('.')[0]))
+for ep_file in episode_files:
+    ep_path = os.path.join(episodes_dir, ep_file)
+    with open(ep_path, 'rb') as f:
+        transitions = pickle.load(f)
+        all_transitions.extend(transitions)
+with open(merged_pickle_path, 'wb') as f:
+    pickle.dump(all_transitions, f)
+print(f"Merged {len(episode_files)} episodes into {merged_pickle_path} with {len(all_transitions)} transitions.")

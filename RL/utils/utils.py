@@ -24,6 +24,21 @@ def frame_to_vector(frame):
     
     return np.array([x, y, z, roll, pitch, yaw], dtype=np.float32)
 
+def vector_to_frame(vec):
+    """
+    Convert a 6D vector [x, y, z, roll, pitch, yaw] to a PyKDL.Frame.
+    Extra entries (e.g. jaw) are ignored.
+    """
+    if vec is None:
+        return Frame()
+    v = np.asarray(vec, dtype=np.float32).reshape(-1)
+    if v.size < 6:
+        raise ValueError(f"vector_to_frame expects at least 6 values, got {v.size}")
+    return Frame(
+        Rotation.RPY(float(v[3]), float(v[4]), float(v[5])),
+        Vector(float(v[0]), float(v[1]), float(v[2]))
+    )
+
 def convert_mat_to_frame(mat):
     frame = Frame(Rotation.RPY(0, 0, 0), Vector(0, 0, 0))
     for i in range(3):

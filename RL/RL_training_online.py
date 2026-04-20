@@ -13,13 +13,15 @@ import torch
 from PyQt5.QtWidgets import QApplication
 import sys
 import threading
+from PyQt5.QtCore import QTimer
 
 gc.collect()
 torch.cuda.empty_cache()
 Base_directory = os.path.dirname(os.path.abspath(__file__))
 
 def load_expert_data(task_name):
-    expert_data_path = Base_directory + f"/Expert_traj/{task_name}/all_episodes_merged.pkl"
+    #expert_data_path = Base_directory + f"/Expert_traj/{task_name}/all_episodes_merged.pkl"
+    expert_data_path = "/home/exie/SurgicAI/RL/Approach_td3_data/all_episodes_merged.pkl"
     try:
         with open(expert_data_path, 'rb') as file:
             return pickle.load(file)
@@ -34,7 +36,7 @@ def create_model(args, env, expert_data):
     return model_class(**model_params)
 
 def setup_environment(args):
-    max_episode_steps = 300
+    max_episode_steps = 1000
     trans_step = 1.0e-3
     angle_step = np.deg2rad(3)
     jaw_step = 0.05
@@ -49,7 +51,7 @@ def setup_environment(args):
     
     gym.envs.register(id=f"{args.algorithm}_{args.reward_type}", entry_point=SRC_class, max_episode_steps=max_episode_steps)
     env = gym.make(f"{args.algorithm}_{args.reward_type}", render_mode="human", reward_type=args.reward_type,
-                   max_episode_step=max_episode_steps, seed=args.seed, step_size=step_size, threshold=threshold, stepDR=args.stepDR)
+                   max_episode_steps=max_episode_steps, seed=args.seed, step_size=step_size, threshold=threshold, stepDR=args.stepDR)
     return env, step_size, threshold, max_episode_steps
 
 def parse_arguments():
@@ -115,7 +117,9 @@ if __name__ == "__main__":
     domain_randomization_callback = DomainRandomizationCallback(env, args.randomization_params, args.seed)
     if args.gui:
         app = QApplication(sys.argv)
-        domain_randomization_callback.start_gui(app)
+
+        # Delay GUI creation until Qt event loop starts
+        QTimer.singleShot(0, lambda: domain_randomization_callback.start_gui(app))
 
     # Start RL training in a background thread
     training_thread = threading.Thread(target=run_training, args=(args, env, domain_randomization_callback,))
