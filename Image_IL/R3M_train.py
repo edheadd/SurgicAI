@@ -24,8 +24,10 @@ gc.collect()
 torch.cuda.empty_cache()
 visDR=True
 stepDR=True
-data_dir = f'/home/exie3/SurgicAI/SurgicAI_Img_Data/{task_name}/{view_name}/visDR_{visDR}_stepDR_{stepDR}/TransitionEps'
-model_save_dir = f'/home/exie3/SurgicAI/IL_Models/{task_name}/R3m_{view_name}/visDR_{visDR}_stepDR_{stepDR}/Model'
+#data_dir = f'/home/exie3/SurgicAI/SurgicAI_Img_Data/{task_name}/{view_name}/visDR_{visDR}_stepDR_{stepDR}/TransitionEps'
+data_dir = f'/home/surgic-ai/SurgicAI/RL/Approach_td3/vis_dr/TransitionEps'
+#model_save_dir = f'/home/exie3/SurgicAI/IL_Models/{task_name}/R3m_{view_name}/visDR_{visDR}_stepDR_{stepDR}/Model'
+model_save_dir = f'/home/surgic-ai/SurgicAI/Image_IL/Approach/vis_dr/Model'
 
 os.makedirs(model_save_dir, exist_ok=True)
 
@@ -47,8 +49,8 @@ class BehaviorCloningModel(nn.Module):
         ).to(device)
 
     def forward(self, x, proprioceptive_data):
-        with torch.no_grad():
-            visual_features = self.r3m(x)
+        #with torch.no_grad():
+        visual_features = self.r3m(x)
         combined_input = torch.cat((visual_features, proprioceptive_data), dim=1)
         return self.regressor(combined_input)
 
@@ -60,8 +62,11 @@ class PickleDataset(Dataset):
         self.transform = transforms.Compose([
             transforms.Resize((256, 256)),
             transforms.CenterCrop(224),
+            transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.1),
+            transforms.RandomGrayscale(p=0.1),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            transforms.RandomErasing(p=0.1, scale=(0.02,0.1)),
+            transforms.Normalize(mean=[0.485,0.456,0.406], std=[0.229,0.224,0.225])
         ])
         
         for f in os.listdir(data_dir):

@@ -5,12 +5,12 @@ import numpy as np
 import gymnasium as gym
 import importlib
 from stable_baselines3.common.callbacks import CheckpointCallback, CallbackList
-from Domain_randomization.Domain_callback import DomainRandomizationCallback
+#from Domain_randomization.Domain_callback import DomainRandomizationCallback
 from stable_baselines3.common.utils import set_random_seed
 from algorithm_configs_online import get_algorithm_config
 import gc
 import torch
-from PyQt5.QtWidgets import QApplication
+#from PyQt5.QtWidgets import QApplication
 import sys
 import threading
 from PyQt5.QtCore import QTimer
@@ -21,7 +21,7 @@ Base_directory = os.path.dirname(os.path.abspath(__file__))
 
 def load_expert_data(task_name):
     #expert_data_path = Base_directory + f"/Expert_traj/{task_name}/all_episodes_merged.pkl"
-    expert_data_path = "/home/exie/SurgicAI/RL/Approach_td3_data/all_episodes_merged.pkl"
+    expert_data_path = Base_directory + f"/Approach_td3/step_dr/all_episodes_merged.pkl"
     try:
         with open(expert_data_path, 'rb') as file:
             return pickle.load(file)
@@ -69,7 +69,7 @@ def parse_arguments():
     parser.add_argument('--stepDR', type=bool, default=False, help='Enable state-space DR')
     return parser.parse_args()
 
-def run_training(args, env, domain_randomization_callback):
+def run_training(args, env):
       
     
     # Load expert data
@@ -85,7 +85,8 @@ def run_training(args, env, domain_randomization_callback):
         name_prefix="rl_model"
     )
         
-    callback_list = CallbackList([checkpoint_callback, domain_randomization_callback])
+    # callback_list = CallbackList([checkpoint_callback, domain_randomization_callback])
+    callback_list = CallbackList([checkpoint_callback])
     
     # Train the model
     model.learn(total_timesteps=args.total_timesteps, progress_bar=True, callback=callback_list, reset_num_timesteps=False)
@@ -97,7 +98,7 @@ def run_training(args, env, domain_randomization_callback):
     elif args.stepDR:
         randomization_str = "stepDR"
     else:
-        randomization_str = "no_randomization"
+        randomization_str = "base_env"
     
     save_path = f"{Base_directory}/{args.task_name}/{args.algorithm}/{args.reward_type}/seed_{args.seed}/{randomization_str}/final_model"
     model.save(save_path)
@@ -122,8 +123,9 @@ if __name__ == "__main__":
         QTimer.singleShot(0, lambda: domain_randomization_callback.start_gui(app))
 
     # Start RL training in a background thread
-    training_thread = threading.Thread(target=run_training, args=(args, env, domain_randomization_callback,))
+    #training_thread = threading.Thread(target=run_training, args=(args, env, domain_randomization_callback,))
+    training_thread = threading.Thread(target=run_training, args=(args, env,))
     training_thread.start()
 
-    if args.gui:
-        sys.exit(app.exec_())
+    # if args.gui:
+    #     sys.exit(app.exec_())

@@ -28,7 +28,7 @@ class GymManager:
                 high=np.array([np.inf]*7, dtype=np.float32),
                 shape=(7,), dtype=np.float32),
             "desired_goal": spaces.Box(
-                low=np.array([-np.inf]*7, dtype=np.float32),
+                low=np.array([-np.inf]*7, dtype=np.actionactionfloat32),
                 high=np.array([np.inf]*7, dtype=np.float32),
                 shape=(7,), dtype=np.float32)              
         })
@@ -47,6 +47,8 @@ class GymManager:
         }
         
         self.env.obs = self.normalize_observation(obs_dict)
+        self.reward = self.env.compute_reward(self.env.obs["achieved_goal"], self.env.obs["desired_goal"])
+        self.terminate = self.env.criteria()
         self.reward = self.env.compute_reward(self.env.obs["achieved_goal"], self.env.obs["desired_goal"])
         self.terminate = self.env.criteria()
         self.truncate = self.env.timestep >= self.env.max_timestep
@@ -70,5 +72,3 @@ class GymManager:
         observation_dict["desired_goal"] = np.array(desired_goal * multiplier2, dtype=np.float32)
         
         return observation_dict
-    
-

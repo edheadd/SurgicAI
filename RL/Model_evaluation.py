@@ -10,10 +10,10 @@ import torch
 
 gc.collect()
 torch.cuda.empty_cache()
-Base_directory = "/home/exie3/SurgicAI/RL"
+Base_directory = "/home/surgic-ai/SurgicAI/RL"
 
 def setup_environment(args, test_env):
-    max_episode_steps = 300
+    max_episode_steps = 1000
     trans_step = 1.0e-3
     angle_step = np.deg2rad(3)
     jaw_step = 0.05
@@ -55,7 +55,8 @@ def load_model(algorithm, env, task_name, reward_type, seed, randomized, stepDR)
         randomization_str = "stepDR"
     else:
         randomization_str = "no_randomization"
-    model_path = f"{Base_directory}/{task_name}/{algorithm}/{reward_type}/seed_{seed}/{randomization_str}/final_model.zip"
+    #model_path = f"{Base_directory}/{task_name}/{algorithm}/{reward_type}/seed_{seed}/{randomization_str}/final_model.zip"
+    model_path = "/home/surgic-ai/SurgicAI/RL/Approach/TD3_HER_BC/dense/seed_10/stepDR/final_model"
     algorithm_config = get_algorithm_config(algorithm, env, task_name, reward_type, seed, None, True)
     model_class = algorithm_config['class']
     return model_class.load(model_path, env=env)
@@ -90,7 +91,8 @@ def run_evaluation(env, model, num_episodes, max_episode_steps):
     return success_rate, avg_length, avg_timecost, all_lengths, all_timecosts
 
 def save_results(args, results, train_seeds, test_env):
-    results_dir = f"{Base_directory}/{args.task_name}/{args.algorithm}/{args.reward_type}/evaluation_results"
+    #results_dir = f"{Base_directory}/{args.task_name}/{args.algorithm}/{args.reward_type}/evaluation_results"
+    results_dir = f"/home/surgic-ai/SurgicAI/RL/Approach/TD3_HER_BC/dense/seed_10/step_dr/evaluation_results/"
     os.makedirs(results_dir, exist_ok=True)
     
     if args.randomized:
@@ -102,7 +104,8 @@ def save_results(args, results, train_seeds, test_env):
     
     # Save detailed results to txt file (include test environment to avoid overwriting)
     safe_test_env = str(test_env)
-    txt_file = os.path.join(results_dir, f"{args.task_name}_{args.algorithm}_{args.reward_type}_{randomization_str}_{safe_test_env}_results.txt")
+    #txt_file = os.path.join(results_dir, f"{args.task_name}_{args.algorithm}_{args.reward_type}_{randomization_str}_{safe_test_env}_results.txt")
+    txt_file = os.path.join(results_dir, f"results.txt")
     with open(txt_file, 'w') as f:
         f.write(f"Task: {args.task_name}\n")
         f.write(f"Algorithm: {args.algorithm}\n")
@@ -117,7 +120,7 @@ def save_results(args, results, train_seeds, test_env):
     
     print(f"\nDetailed results saved to {txt_file}")
 
-    numbers_file = os.path.join(results_dir, f"{args.task_name}_{args.algorithm}_{args.reward_type}_{randomization_str}_{safe_test_env}_numbers.txt")
+    numbers_file = os.path.join(results_dir, f"numbers.txt")
     with open(numbers_file, 'w') as f:
         f.write(f"{results['mean_success_rate']} {results['std_success_rate']} ")
         f.write(f"{results['mean_avg_length']} {results['std_avg_length']} ")
@@ -129,14 +132,15 @@ def main():
     args = parse_arguments()
     set_random_seed(args.eval_seed)
     
-    test_envs = ["base_env", "stepDR_env"]
+    #test_envs = ["base_env", "stepDR_env"]
+    test_envs = ["stepDR_env"]
     
     for test_env in test_envs:
         print(f"\nEvaluating in environment: {test_env}")
 
         env, step_size, threshold, max_episode_steps = setup_environment(args, test_env)
         
-        train_seeds = [1, 10, 100, 1000, 10000]
+        train_seeds = [1, 5, 10, 15, 100, 150, 1000, 1500, 10000, 15000]
         all_success_rates = []
         all_lengths = []
         all_timecosts = []

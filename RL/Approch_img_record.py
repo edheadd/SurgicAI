@@ -1,6 +1,6 @@
 import sys
-path_to_add = '/home/jin/SRC-gym/gym-env/Hierachical_Learning_v2'
-sys.path.append(path_to_add)
+# path_to_add = '/home/jin/SRC-gym/gym-env/Hierachical_Learning_v2'
+# sys.path.append(path_to_add)
 
 import gymnasium as gym
 from Approach_env import SRC_approach
@@ -60,7 +60,7 @@ def wait_for_images():
     for key in image_received:
         image_received[key] = False
 
-def save_images(episode,timestep, save_dir=f'/home/exie/SurgicAI/RL/Approach_td3_data/ImgData/'):
+def save_images(episode,timestep, save_dir=f'/home/surgic-ai/SurgicAI/RL/Approach_td3/vis_dr/ImgData/'):
     """Save images with timestamps to a directory."""
     os.makedirs(save_dir, exist_ok=True)
     for cam_id, img in current_images.items():
@@ -133,7 +133,7 @@ env.reset()
 visualDRCallback.start_thread()
 
 #base_directory = f"/home/exie3/SurgicAI/SurgicAI_Img_Data/Approach/SingeCam/visDR_{randomize_env}_stepDR_{randomize_step_size}/TransitionEps/"
-base_directory = f"/home/exie/SurgicAI/RL/Approach_td3_data/TransitionEps/"
+base_directory = f"/home/surgic-ai/SurgicAI/RL/Approach_td3/vis_dr/TransitionEps/"
 
 def save_transitions_episode(transitions, episode_index, base_directory):
     # Ensure the directory exists
@@ -192,7 +192,7 @@ while episode < num_episodes:
             "obs": obs,
             "next_obs": next_obs,
             "action": action,
-            "reward": np.array([reward], dtype=np.float32),
+            "reward": np.array(reward, dtype=np.float32),
             "done": np.array([done], dtype=np.float32),
             "info": info,
             "images": {cam_id: img for cam_id, img in current_images.items()}
@@ -238,8 +238,7 @@ def save_transitions_batch(transitions, batch_index, base_directory):
 
 batch_size = 50
 # base_directory = "/home/jin/migoogledrive/SRC_img_data/Approach/Multi_view"
-#base_directory = f"/home/exie/SurgicAI/SurgicAI_Img_Data/Approach/SingeCam/visDR_{randomize_env}_stepDR_{randomize_step_size}/TransitionBatch/"
-base_directory = f"/home/exie/SurgicAI/RL/Approach_td3_data/TransitionBatch/"
+base_directory = f"/home/surgic-ai/SurgicAI/RL/Approach_td3/vis_dr/TransitionBatch/"
 
 os.makedirs(base_directory, exist_ok=True)
 current_batch = []
@@ -255,7 +254,7 @@ for timestep, transition in enumerate(episode_transitions):
 
 
 #filename = f"/home/exie3/SurgicAI/SurgicAI_Img_Data/Approach/SingeCam/visDR_{randomize_env}_stepDR_{randomize_step_size}/Expert_"+str(num_episodes)+".pkl"
-filename = f"/home/exie/SurgicAI/RL/Approach_td3_data/Expert_"+str(num_episodes)+".pkl"
+filename = f"/home/surgic-ai/SurgicAI/RL/Approach_td3/vis_dr/Expert_"+str(num_episodes)+".pkl"
 
 
 # 使用 'wb' 模式打开文件以写入二进制数据
@@ -270,15 +269,13 @@ data_dict = {
     "max_timestep": 3*average_time_step
 }
 #pickle_file_path = f"/home/exie3/SurgicAI/SurgicAI_Img_Data/Approach/SingeCam/visDR_{randomize_env}_stepDR_{randomize_step_size}/img_env_info.pkl"
-pickle_file_path = f"/home/exie/SurgicAI/RL/Approach_td3_data/img_env_info.pkl"
+pickle_file_path = f"/home/exie/SurgicAI/RL/Approach_td3_test/img_env_info.pkl"
 with open(pickle_file_path, 'wb') as file:
     pickle.dump(data_dict, file)
 
-
-
 # Merge all episode_*.pkl files in the directory into one big list (no glob needed)
-episodes_dir = "/home/exie/SurgicAI/RL/Approach_td3_data/TransitionEps/"
-merged_pickle_path = "/home/exie/SurgicAI/RL/Approach_td3_data/all_episodes_merged.pkl"
+episodes_dir = "/home/surgic-ai/SurgicAI/RL/Approach_td3/vis_dr/TransitionEps/"
+merged_pickle_path = "/home/surgic-ai/SurgicAI/RL/Approach_td3/vis_dr/all_episodes_merged.pkl"
 all_transitions = []
 episode_files = [f for f in os.listdir(episodes_dir) if f.startswith("episode_") and f.endswith(".pkl")]
 episode_files = sorted(episode_files, key=lambda x: int(x.split('_')[1].split('.')[0]))

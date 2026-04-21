@@ -1,0 +1,9 @@
+Task: Approach
+View: front
+Number of episodes per experiment: 20
+Number of experiments: 3
+
+Results:
+Success Rate: 0.00% ± 0.00%
+Average Trajectory Length: nan ± nan mm
+Average Time Cost: nan ± nan steps

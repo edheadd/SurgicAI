@@ -2,6 +2,8 @@ from stable_baselines3.common.callbacks import BaseCallback
 from Domain_randomization.randomization_gui import GUI
 import threading
 import time
+import threading
+import time
 
 try:
     from world_randomization_msgs.msg import Randomization
@@ -9,7 +11,7 @@ except ImportError:
     print("World randomization ROS messages not found, please ensure Domain Randomization AMBF Plugin is built and sourced")
 
 class DomainRandomizationCallback(BaseCallback):
-    def __init__(self, env, randomization_args="0,0,0,0,0", seed=42, verbose=0):
+    def __init__(self, env, randomization_args="0,0,1,1,1", seed=42, verbose=0):
         super().__init__(verbose)
         self.randomization_params = [True if x == "1" else False for x in randomization_args.split(",")]
         print(f"Domain Randomization parameters: {self.randomization_params}")
