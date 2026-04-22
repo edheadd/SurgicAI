@@ -5,6 +5,82 @@ from PyKDL import Frame, Rotation, Vector, dot
 import numpy as np
 import json
 import math
+import importlib
+from typing import Type
+
+
+def resolve_src_env(task_name: str):
+    """
+    Resolve the SRC Gymnasium environment class for a given task name.
+
+    This avoids CWD-dependent imports by loading environments as `RL.<Task>_env`.
+    """
+    # Keep this mapping logic centralized so scripts don't depend on CWD/PYTHONPATH quirks.
+    # Environments live as modules like `RL/Approach_env.py` with classes `SRC_approach`.
+    task = str(task_name)
+    module_name = f"RL.{task.capitalize()}_env"
+    class_name = f"SRC_{task.lower()}"
+    module = importlib.import_module(module_name)
+    return getattr(module, class_name)
+
+
+def default_step_size(
+    *,
+    trans_step: float = 1.0e-3,
+    angle_step_rad: float | None = None,
+    angle_step_deg: float = 3.0,
+    jaw_step: float = 0.05,
+) -> np.ndarray:
+    """
+    Standard 7D action scaling used across training/eval scripts.
+    Returns: np.array([dx, dy, dz, droll, dpitch, dyaw, djaw], dtype=float32)
+    """
+    if angle_step_rad is None:
+        angle_step_rad = np.deg2rad(float(angle_step_deg))
+    return np.array(
+        [trans_step, trans_step, trans_step, angle_step_rad, angle_step_rad, angle_step_rad, jaw_step],
+        dtype=np.float32,
+    )
+
+
+def threshold_from_args(trans_error: float, angle_error_deg: float) -> np.ndarray:
+    """Helper to build (trans, angle) thresholds in consistent units."""
+    return np.array([float(trans_error), np.deg2rad(float(angle_error_deg))], dtype=np.float32)
+
+
+def experiment_variant(
+    *,
+    variant: str | None = None,
+    stepDR: bool | None = None,
+    randomized: bool | None = None,
+    randomization_params: str | None = None,
+) -> str:
+    """
+    Canonical experiment naming used for directory layout.
+
+    Priority:
+    1) explicit `variant` if provided
+    2) `randomized=True` OR `randomization_params` indicates all-on → "randomization"
+    3) `stepDR=True` → "stepDR"
+    4) otherwise → "base_env"
+    """
+    # `variant` is intended to be the only knob users need for directory naming.
+    # Keep it stable because it becomes part of experiment paths and filenames.
+    if variant:
+        return str(variant)
+
+    if randomized:
+        return "randomization"
+
+    if randomization_params is not None:
+        # historical convention: "1,1,1,1,1" means full world randomization
+        if str(randomization_params).strip() == "1,1,1,1,1":
+            return "randomization"
+
+    if stepDR:
+        return "stepDR"
+
+    return "base_env"
 
 def frame_to_vector(frame):
     """

@@ -4,10 +4,10 @@ from threading import Thread, Lock, RLock
 # from geometry_msgs.msg import PoseStamped
 from sensor_msgs.msg import JointState
 #from transforms3d.euler import quat2euler, euler2quat
-from utils.kinematics.kinematics import PSMKinematicSolver
+from RL.utils.kinematics.kinematics import PSMKinematicSolver
 
-from utils.kinematics.DH import enforce_limits
-from utils.utils import convert_mat_to_frame
+from RL.utils.kinematics.DH import enforce_limits
+from RL.utils.utils import convert_mat_to_frame
 
 _psm_global_compute_lock = RLock()
 

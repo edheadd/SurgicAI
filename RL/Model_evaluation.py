@@ -3,28 +3,26 @@ import argparse
 import numpy as np
 import gymnasium as gym
 import importlib
-from stable_baselines3.common.utils import set_random_seed
 from algorithm_configs_online import get_algorithm_config
 import gc
 import torch
+from pathlib import Path
+
+from rl_paths import ExperimentKey, ensure_dir, experiment_dir
+from RL.utils.cli_args import add_common_logging_args, add_experiment_variant_arg, add_threshold_args
+from RL.utils.logging_utils import get_logger, setup_logging
+from RL.utils.seed import seed_everything
+from RL.utils.utils import resolve_src_env, default_step_size, threshold_from_args, experiment_variant
 
 gc.collect()
 torch.cuda.empty_cache()
-Base_directory = "/home/surgic-ai/SurgicAI/RL"
+logger = get_logger(__name__)
 
 def setup_environment(args, test_env):
     max_episode_steps = 1000
-    trans_step = 1.0e-3
-    angle_step = np.deg2rad(3)
-    jaw_step = 0.05
-    step_size = np.array([trans_step, trans_step, trans_step, angle_step, angle_step, angle_step, jaw_step], dtype=np.float32)
-
-    threshold = np.array([args.trans_error, np.deg2rad(args.angle_error)], dtype=np.float32)
-    
-    module_name = f"{args.task_name.capitalize()}_env"
-    class_name = f"SRC_{args.task_name.lower()}"
-    module = importlib.import_module(module_name)
-    SRC_class = getattr(module, class_name)
+    step_size = default_step_size(trans_step=1.0e-3, angle_step_deg=3.0, jaw_step=0.05)
+    threshold = threshold_from_args(args.trans_error, args.angle_error)
+    SRC_class = resolve_src_env(args.task_name)
     
     if test_env == "stepDR_env":
         stepDR = True
@@ -41,25 +39,59 @@ def parse_arguments():
     parser.add_argument('--algorithm', type=str, required=True, help='Name of the RL algorithm to evaluate')
     parser.add_argument('--task_name', type=str, required=True, help='Name of the task/environment')
     parser.add_argument('--reward_type', type=str, choices=['dense', 'sparse'], default='sparse', help='Reward type')
-    parser.add_argument('--trans_error', type=float, required=True, help='Translational error threshold')
-    parser.add_argument('--angle_error', type=float, required=True, help='Angular error threshold in degrees')
+    add_threshold_args(parser)
     parser.add_argument('--eval_seed', type=int, default=42, help='Fixed seed for evaluation')
-    parser.add_argument('--randomized', type=bool, default=False, help='Whether to use environment was randomized during training')
-    parser.add_argument('--stepDR', type=bool, default=False, help='Enable step size domain randomization')
+    # Backwards-compatible flags (kept), plus canonical --variant.
+    parser.add_argument('--randomized', action='store_true', help='Model was trained with world randomization enabled')
+    parser.add_argument('--stepDR', action='store_true', help='Model was trained with stepDR enabled')
+    add_experiment_variant_arg(parser)
+    parser.add_argument('--model-path', type=str, default=None, help='Explicit path to model (overrides derived path)')
+    parser.add_argument('--train-seeds', type=int, nargs='*', default=None, help='Seeds to evaluate (default: a standard list)')
+    parser.add_argument('--num-episodes', type=int, default=20, help='Evaluation episodes per seed')
+    add_common_logging_args(parser)
     return parser.parse_args()
 
-def load_model(algorithm, env, task_name, reward_type, seed, randomized, stepDR):
-    if randomized:
-        randomization_str = "randomization"
-    elif stepDR:
-        randomization_str = "stepDR"
+def load_model(algorithm, env, task_name, reward_type, seed, randomized, stepDR, model_path: str | None, variant: str | None):
+    randomization_str = experiment_variant(
+        variant=variant,
+        randomized=bool(randomized),
+        stepDR=bool(stepDR),
+    )
+
+    if model_path is not None:
+        resolved_model_path = Path(model_path).expanduser()
     else:
-        randomization_str = "no_randomization"
-    #model_path = f"{Base_directory}/{task_name}/{algorithm}/{reward_type}/seed_{seed}/{randomization_str}/final_model.zip"
-    model_path = "/home/surgic-ai/SurgicAI/RL/Approach/TD3_HER_BC/dense/seed_10/stepDR/final_model"
+        # Default: reuse the same directory structure as training scripts.
+        candidate_variants = [randomization_str]
+        if randomization_str == "base_env":
+            candidate_variants = ["base_env", "no_randomization"]
+
+        resolved_model_path = None
+        for variant in candidate_variants:
+            candidate = experiment_dir(ExperimentKey(
+                task_name=task_name,
+                algorithm=algorithm,
+                reward_type=reward_type,
+                seed=seed,
+                variant=variant,
+            )) / "final_model"
+            if candidate.exists() or candidate.with_suffix(".zip").exists():
+                resolved_model_path = candidate
+                break
+        if resolved_model_path is None:
+            # Last resort: return the derived path even if it doesn't exist,
+            # so the error message is actionable.
+            resolved_model_path = experiment_dir(ExperimentKey(
+                task_name=task_name,
+                algorithm=algorithm,
+                reward_type=reward_type,
+                seed=seed,
+                variant=candidate_variants[0],
+            )) / "final_model"
+
     algorithm_config = get_algorithm_config(algorithm, env, task_name, reward_type, seed, None, True)
     model_class = algorithm_config['class']
-    return model_class.load(model_path, env=env)
+    return model_class.load(str(resolved_model_path), env=env)
 
 def run_evaluation(env, model, num_episodes, max_episode_steps):
     total_length = 0
@@ -91,21 +123,20 @@ def run_evaluation(env, model, num_episodes, max_episode_steps):
     return success_rate, avg_length, avg_timecost, all_lengths, all_timecosts
 
 def save_results(args, results, train_seeds, test_env):
-    #results_dir = f"{Base_directory}/{args.task_name}/{args.algorithm}/{args.reward_type}/evaluation_results"
-    results_dir = f"/home/surgic-ai/SurgicAI/RL/Approach/TD3_HER_BC/dense/seed_10/step_dr/evaluation_results/"
-    os.makedirs(results_dir, exist_ok=True)
-    
-    if args.randomized:
-        randomization_str = "randomization"
-    elif args.stepDR:
-        randomization_str = "stepDR"
-    else:
-        randomization_str = "no_randomization"
-    
+    variant = experiment_variant(variant=args.variant, randomized=args.randomized, stepDR=args.stepDR)
+    out_dir = ensure_dir(experiment_dir(ExperimentKey(
+        task_name=args.task_name,
+        algorithm=args.algorithm,
+        reward_type=args.reward_type,
+        seed=args.eval_seed,
+        variant=f"{variant}_evaluation",
+    )))
+    results_dir = ensure_dir(out_dir / "evaluation_results" / str(test_env))
+
     # Save detailed results to txt file (include test environment to avoid overwriting)
     safe_test_env = str(test_env)
     #txt_file = os.path.join(results_dir, f"{args.task_name}_{args.algorithm}_{args.reward_type}_{randomization_str}_{safe_test_env}_results.txt")
-    txt_file = os.path.join(results_dir, f"results.txt")
+    txt_file = results_dir / "results.txt"
     with open(txt_file, 'w') as f:
         f.write(f"Task: {args.task_name}\n")
         f.write(f"Algorithm: {args.algorithm}\n")
@@ -118,47 +149,59 @@ def save_results(args, results, train_seeds, test_env):
         f.write(f"Average Trajectory Length: {results['mean_avg_length']:.2f} ± {results['std_avg_length']:.2f} mm\n")
         f.write(f"Average Time Cost: {results['mean_avg_timecost']:.2f} ± {results['std_avg_timecost']:.2f} steps\n\n\n")
     
-    print(f"\nDetailed results saved to {txt_file}")
+    logger.info("Detailed results saved to %s", txt_file)
 
-    numbers_file = os.path.join(results_dir, f"numbers.txt")
+    numbers_file = results_dir / "numbers.txt"
     with open(numbers_file, 'w') as f:
         f.write(f"{results['mean_success_rate']} {results['std_success_rate']} ")
         f.write(f"{results['mean_avg_length']} {results['std_avg_length']} ")
         f.write(f"{results['mean_avg_timecost']} {results['std_avg_timecost']}")
     
-    print(f"Numeric results saved to {numbers_file}")
+    logger.info("Numeric results saved to %s", numbers_file)
 
 def main():
     args = parse_arguments()
-    set_random_seed(args.eval_seed)
+    setup_logging(level=args.log_level, log_file=args.log_file)
+    seed_everything(args.eval_seed)
     
-    #test_envs = ["base_env", "stepDR_env"]
-    test_envs = ["stepDR_env"]
+    test_envs = ["stepDR_env"] if args.stepDR else ["base_env"]
     
     for test_env in test_envs:
-        print(f"\nEvaluating in environment: {test_env}")
+        logger.info("Evaluating in environment: %s", test_env)
 
         env, step_size, threshold, max_episode_steps = setup_environment(args, test_env)
         
-        train_seeds = [1, 5, 10, 15, 100, 150, 1000, 1500, 10000, 15000]
+        train_seeds = args.train_seeds if args.train_seeds is not None else [1, 5, 10, 15, 100, 150, 1000, 1500, 10000, 15000]
         all_success_rates = []
         all_lengths = []
         all_timecosts = []
         
         for train_seed in train_seeds:
-            model = load_model(args.algorithm, env, args.task_name, args.reward_type, train_seed, args.randomized, args.stepDR)
+            model = load_model(
+                args.algorithm,
+                env,
+                args.task_name,
+                args.reward_type,
+                train_seed,
+                args.randomized,
+                args.stepDR,
+                args.model_path,
+                args.variant,
+            )
             
-            num_episodes = 20
-            success_rate, avg_length, avg_timecost, lengths, timecosts = run_evaluation(env, model, num_episodes, max_episode_steps)
+            success_rate, avg_length, avg_timecost, lengths, timecosts = run_evaluation(env, model, args.num_episodes, max_episode_steps)
             
             all_success_rates.append(success_rate)
             all_lengths.extend(lengths)
             all_timecosts.extend(timecosts)
             
-            print(f"\nEvaluation Results for model trained with seed {train_seed}:")
-            print(f"Success Rate: {success_rate:.2%}")
-            print(f"Average Trajectory Length: {avg_length:.2f} mm")
-            print(f"Average Time Cost: {avg_timecost:.2f} steps")
+            logger.info(
+                "Seed %s: success=%0.2f%%, avg_len=%0.2fmm, avg_steps=%0.2f",
+                train_seed,
+                success_rate * 100.0,
+                avg_length,
+                avg_timecost,
+            )
         
         # Calculate mean and standard deviation across all seeds
         mean_success_rate = np.mean(all_success_rates)
@@ -168,10 +211,15 @@ def main():
         mean_avg_timecost = np.mean(all_timecosts)
         std_avg_timecost = np.std(all_timecosts)
         
-        print("\nFinal Results Across All Seeds:")
-        print(f"Success Rate: {mean_success_rate:.2%} ± {std_success_rate:.2%}")
-        print(f"Average Trajectory Length: {mean_avg_length:.2f} ± {std_avg_length:.2f} mm")
-        print(f"Average Time Cost: {mean_avg_timecost:.2f} ± {std_avg_timecost:.2f} steps")
+        logger.info(
+            "Final across seeds: success=%0.2f%%±%0.2f%%, avg_len=%0.2f±%0.2fmm, avg_steps=%0.2f±%0.2f",
+            mean_success_rate * 100.0,
+            std_success_rate * 100.0,
+            mean_avg_length,
+            std_avg_length,
+            mean_avg_timecost,
+            std_avg_timecost,
+        )
         
         results = {
             'mean_success_rate': mean_success_rate,

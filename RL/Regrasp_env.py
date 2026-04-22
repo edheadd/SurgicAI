@@ -1,5 +1,5 @@
 import numpy as np
-from subtask_env import SRC_subtask
+from RL.subtask_env import SRC_subtask
 
 class SRC_regrasp(SRC_subtask):
     def __init__(self,seed=None,render_mode = None,reward_type = "sparse",threshold = [0.5,np.deg2rad(30)],max_episode_step=200, step_size=np.array([0.0005, 0.0005, 0.0005, np.deg2rad(2), np.deg2rad(2), np.deg2rad(2), 0.05]), stepDR=None):

@@ -1,4 +1,3 @@
-import os
 import argparse
 import pickle
 import numpy as np
@@ -10,16 +9,27 @@ from algorithm_configs_offline import get_algorithm_config
 import torch
 import gc
 import importlib
+from pathlib import Path
+
+from rl_paths import ExperimentKey, ensure_dir, experiment_dir, rl_dir
+from RL.utils.cli_args import add_common_logging_args, add_seed_arg, add_threshold_args
+from RL.utils.logging_utils import get_logger, setup_logging
+from RL.utils.seed import seed_everything
+from RL.utils.utils import resolve_src_env, default_step_size, threshold_from_args
 
 gc.collect()
 torch.cuda.empty_cache()
-Base_directory = os.path.dirname(os.path.abspath(__file__))
 MAX_EPISODE_STEPS = 200
+logger = get_logger(__name__)
 
-def load_expert_data(task_name):
-    expert_data_path = Base_directory + f"/Expert_traj/{task_name}/all_episodes_merged.pkl"
+def load_expert_data(task_name: str, expert_data_path: str | None):
+    if expert_data_path:
+        p = Path(expert_data_path).expanduser()
+    else:
+        p = rl_dir() / "Expert_traj" / str(task_name) / "all_episodes_merged.pkl"
+
     try:
-        with open(expert_data_path, 'rb') as file:
+        with open(p, 'rb') as file:
             data = pickle.load(file)
             observations = []
             actions = []
@@ -34,21 +44,16 @@ def load_expert_data(task_name):
             actions = np.array(actions, dtype=np.float32)
             rewards = np.array(rewards, dtype=np.float32)
             terminals = np.array(terminals, dtype=bool)
+            logger.info("Loaded expert data from %s", p)
             return MDPDataset(observations, actions, rewards, terminals)
     except FileNotFoundError:
-        print(f"Expert data file not found: {expert_data_path}")
+        logger.error("Expert data file not found: %s", p)
         return None
 
 def setup_environment(args):
-    trans_step = 1.0e-3
-    angle_step = np.deg2rad(3)
-    jaw_step = 0.05
-    step_size = np.array([trans_step, trans_step, trans_step, angle_step, angle_step, angle_step, jaw_step], dtype=np.float32)
-    threshold = np.array([args.trans_error, np.deg2rad(args.angle_error)], dtype=np.float32)
-    module_name = f"{args.task_name.capitalize()}_env"
-    class_name = f"SRC_{args.task_name.lower()}"
-    module = importlib.import_module(module_name)
-    SRC_class = getattr(module, class_name)
+    step_size = default_step_size(trans_step=1.0e-3, angle_step_deg=3.0, jaw_step=0.05)
+    threshold = threshold_from_args(args.trans_error, args.angle_error)
+    SRC_class = resolve_src_env(args.task_name)
     gym.envs.register(id=f"{args.algorithm}_{args.reward_type}", entry_point=SRC_class, max_episode_steps=MAX_EPISODE_STEPS)
     env = gym.make(f"{args.algorithm}_{args.reward_type}", render_mode="human", reward_type=args.reward_type,
                    max_episode_step=MAX_EPISODE_STEPS, seed=args.seed, step_size=step_size, threshold=threshold)
@@ -95,11 +100,17 @@ def save_results(args, results):
     mean_avg_timecost = np.mean(all_timecosts)
     std_avg_timecost = np.std(all_timecosts)
     
-    results_dir = f"{Base_directory}/{args.task_name}/{args.algorithm}/{args.reward_type}/seed_{args.seed}/evaluation_results"
-    os.makedirs(results_dir, exist_ok=True)
+    out_dir = ensure_dir(experiment_dir(ExperimentKey(
+        task_name=args.task_name,
+        algorithm=args.algorithm,
+        reward_type=args.reward_type,
+        seed=args.seed,
+        variant="offline",
+    )))
+    results_dir = ensure_dir(out_dir / "evaluation_results")
     
     # Save detailed results to txt file
-    txt_file = os.path.join(results_dir, f"{args.task_name}_{args.algorithm}_{args.reward_type}_results.txt")
+    txt_file = results_dir / f"{args.task_name}_{args.algorithm}_{args.reward_type}_results.txt"
     with open(txt_file, 'w') as f:
         f.write(f"Task: {args.task_name}\n")
         f.write(f"Algorithm: {args.algorithm}\n")
@@ -110,16 +121,16 @@ def save_results(args, results):
         f.write(f"Average Trajectory Length: {mean_avg_length:.2f} ± {std_avg_length:.2f} mm\n")
         f.write(f"Average Time Cost: {mean_avg_timecost:.2f} ± {std_avg_timecost:.2f} steps\n")
     
-    print(f"\nDetailed results saved to {txt_file}")
+    logger.info("Detailed results saved to %s", txt_file)
 
     # Save numeric results to txt file
-    numbers_file = os.path.join(results_dir, f"{args.task_name}_{args.algorithm}_{args.reward_type}_numbers.txt")
+    numbers_file = results_dir / f"{args.task_name}_{args.algorithm}_{args.reward_type}_numbers.txt"
     with open(numbers_file, 'w') as f:
         f.write(f"{mean_success_rate} {std_success_rate} ")
         f.write(f"{mean_avg_length} {std_avg_length} ")
         f.write(f"{mean_avg_timecost} {std_avg_timecost}")
     
-    print(f"Numeric results saved to {numbers_file}")
+    logger.info("Numeric results saved to %s", numbers_file)
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Train an offline RL agent.")
@@ -128,22 +139,27 @@ def parse_arguments():
     parser.add_argument('--reward_type', type=str, choices=['dense', 'sparse'], default='sparse', help='Reward type')
     parser.add_argument('--n_epochs', type=int, default=30, help='Number of training epochs')
     parser.add_argument('--n_steps_per_epoch', type=int, default=200, help='Number of steps per epoch')
-    parser.add_argument('--seed', type=int, default=10, help='Random seed')
-    parser.add_argument('--trans_error', type=float, required=True, help='Translational error threshold')
-    parser.add_argument('--angle_error', type=float, required=True, help='Angular error threshold in degrees')
+    add_seed_arg(parser, name="--seed", default=10)
+    add_threshold_args(parser)
     parser.add_argument('--use_gpu', action='store_true', help='Use GPU for training')
+    parser.add_argument('--expert-data', type=str, default=None, help='Optional path to expert trajectories pickle')
+    add_common_logging_args(parser)
     return parser.parse_args()
 
 def main():
     args = parse_arguments()
-    torch.manual_seed(args.seed)
-    np.random.seed(args.seed)
-    d3rlpy.seed(args.seed)
+    setup_logging(level=args.log_level, log_file=args.log_file)
+    seed_everything(args.seed)
+    # d3rlpy seed is handled in seed_everything, but keep explicit call for safety.
+    try:
+        d3rlpy.seed(int(args.seed))
+    except Exception:
+        pass
 
     env = setup_environment(args)
-    dataset = load_expert_data(args.task_name)
+    dataset = load_expert_data(args.task_name, args.expert_data)
     if dataset is None:
-        print("No expert data found. Exiting.")
+        logger.error("No expert data found. Exiting.")
         return
 
     model = get_algorithm_config(args.algorithm, env, args.task_name, args.reward_type, args.seed, args.use_gpu)
@@ -159,11 +175,17 @@ def main():
         show_progress=True,
     )
 
-    save_path = f"{Base_directory}/{args.task_name}/{args.algorithm}/{args.reward_type}/seed_{args.seed}/final_model.d3"
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    model.save(save_path)
+    out_dir = ensure_dir(experiment_dir(ExperimentKey(
+        task_name=args.task_name,
+        algorithm=args.algorithm,
+        reward_type=args.reward_type,
+        seed=args.seed,
+        variant="offline",
+    )))
+    save_path = out_dir / "final_model.d3"
+    model.save(str(save_path))
 
-    print("\nStarting model evaluation...")
+    logger.info("Starting model evaluation...")
     num_episodes = 20
     evaluation_results = run_evaluation(env, model, num_episodes, MAX_EPISODE_STEPS)
     

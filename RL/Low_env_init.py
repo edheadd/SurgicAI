@@ -5,9 +5,13 @@ from Low_level_env_complete import SRC_low_level
 import numpy as np
 from stable_baselines3.common.env_checker import check_env
 from RL_algo.td3_BC import TD3_BC
-from stable_baselines3.common.utils import set_random_seed
 from gymnasium import spaces
 import time
+import os
+from pathlib import Path
+
+from rl_paths import repo_dir
+from RL.utils.seed import seed_everything
 # Create environment
 
 def low_pass_filter(prev_action, new_action, alpha=0.5):
@@ -46,14 +50,16 @@ class DummyEnv(gym.Env):
 
 class low_level_controller():
     def __init__(self,seed=10):
-        set_random_seed(seed)
+        seed_everything(seed)
 
 
         exp_index = 4
-        txtfile1 = '/home/jin/SRC-gym/gym-env/Hierachical_Learning_v2/high_level_step_size.txt'
-        step_size= np.loadtxt(txtfile1, dtype=np.float32)
-        txtfile2 = '/home/jin/SRC-gym/gym-env/Hierachical_Learning_v2/threshold_high_level_complete.txt'
-        threshold = np.loadtxt(txtfile2, dtype=np.float32)
+        _root = repo_dir()
+        _env_info_dir = Path(os.environ.get("SURGICAI_ENV_INFO_DIR", str(_root / "RL" / "Env_info"))).expanduser().resolve()
+        txtfile1 = _env_info_dir / "high_level_step_size.txt"
+        step_size = np.loadtxt(str(txtfile1), dtype=np.float32)
+        txtfile2 = _env_info_dir / "threshold_high_level_complete.txt"
+        threshold = np.loadtxt(str(txtfile2), dtype=np.float32)
 
         episode_steps = 800
 
@@ -90,19 +96,27 @@ class low_level_controller():
         )
 
 
-        model_path_approach = "/home/jin/SRC-gym/gym-env/Hierachical_Learning_v2/Approach/TD3_BC_noise_dense/rl_model_final.zip"
+        # Policy checkpoints are external artifacts; set SURGICAI_POLICY_DIR to point at them.
+        _policy_dir = os.environ.get("SURGICAI_POLICY_DIR")
+        if not _policy_dir:
+            # Best-effort fallback: look for task dirs under repo root.
+            _fallback = _root
+            _policy_dir = str(_fallback)
+        _policy_dir = str(Path(_policy_dir).expanduser().resolve())
+
+        model_path_approach = str(Path(_policy_dir) / "Approach" / "TD3_BC_noise_dense" / "rl_model_final.zip")
         self.model_approach = TD3_BC.load(model_path_approach,env=dummy_env)#
 
-        model_path_place = "/home/jin/SRC-gym/gym-env/Hierachical_Learning_v2/Place/TD3_BC_noise_sparse/rl_model_final.zip"
+        model_path_place = str(Path(_policy_dir) / "Place" / "TD3_BC_noise_sparse" / "rl_model_final.zip")
         self.model_place = TD3_BC.load(model_path_place,env=dummy_env)
 
-        model_path_insert = "/home/jin/SRC-gym/gym-env/Hierachical_Learning_v2/Insert/TD3_BC_sparse/rl_model_final.zip"
+        model_path_insert = str(Path(_policy_dir) / "Insert" / "TD3_BC_sparse" / "rl_model_final.zip")
         self.model_insert = TD3_BC.load(model_path_insert,env=dummy_env)
 
-        model_path_regrasp = "/home/jin/SRC-gym/gym-env/Hierachical_Learning_v2/Regrasp/TD3_BC_noise_dense/rl_model_final.zip"
+        model_path_regrasp = str(Path(_policy_dir) / "Regrasp" / "TD3_BC_noise_dense" / "rl_model_final.zip")
         self.model_regrasp = TD3_BC.load(model_path_regrasp,env=dummy_env)
 
-        model_path_pullout = "/home/jin/SRC-gym/gym-env/Hierachical_Learning_v2/Pullout/TD3_BC_noise_dense/rl_model_final.zip"
+        model_path_pullout = str(Path(_policy_dir) / "Pullout" / "TD3_BC_noise_dense" / "rl_model_final.zip")
         self.model_pullout = TD3_BC.load(model_path_pullout,env=dummy_env)
 
 

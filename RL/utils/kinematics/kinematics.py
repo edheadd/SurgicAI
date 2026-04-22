@@ -1,17 +1,15 @@
 from enum import Enum
 from typing import Union
 import numpy as np
-from utils.kinematics.DH import DH, JointType, Convention
+from RL.utils.kinematics.DH import DH, JointType, Convention
 import os
-import sys
 from PyKDL import Vector, Frame, Rotation
-from utils.utils import load_json_dvrk, get_angle, convert_mat_to_frame
-dynamic_path = os.path.abspath(__file__ + "/../../")
-sys.path.append(dynamic_path)
+from RL.utils.utils import load_json_dvrk, get_angle, convert_mat_to_frame
+from pathlib import Path
 from glob import glob
 import math
 
-config_folder = os.path.join(dynamic_path, 'kinematics', 'config')
+config_folder = str(Path(__file__).resolve().parent / "config")
 
 # THIS IS THE FK FOR THE PSM MOUNTED WITH THE LARGE NEEDLE DRIVER TOOL. THIS IS THE
 # SAME KINEMATIC CONFIGURATION FOUND IN THE DVRK MANUAL. NOTE, JUST LIKE A FAULT IN THE

@@ -11,23 +11,46 @@ import wandb
 import argparse
 from r3m import load_r3m
 import gc
+from pathlib import Path
+import sys
+
+from RL.utils.cli_args import add_common_logging_args
+from RL.utils.logging_utils import get_logger, setup_logging
+from RL.utils.seed import seed_everything
 
 parser = argparse.ArgumentParser(description='Behavior Cloning Training')
 parser.add_argument('--task_name', type=str, required=True, help='Name of the task')
 parser.add_argument('--view_name', type=str, required=True, help='Name of the view')
+parser.add_argument('--seed', type=int, default=10, help='Random seed')
+parser.add_argument('--use_wandb', action='store_true', help='Enable Weights & Biases logging')
+parser.add_argument('--wandb_project', type=str, default="behavior_cloning_v2", help='W&B project name')
+parser.add_argument('--wandb_name', type=str, default=None, help='Optional W&B run name override')
+add_common_logging_args(parser)
 args = parser.parse_args()
 
 task_name = args.task_name
 view_name = args.view_name
 
+logger = get_logger(__name__)
+setup_logging(level=args.log_level, log_file=args.log_file)
+seed_everything(args.seed)
+
 gc.collect()
 torch.cuda.empty_cache()
 visDR=True
 stepDR=True
-#data_dir = f'/home/exie3/SurgicAI/SurgicAI_Img_Data/{task_name}/{view_name}/visDR_{visDR}_stepDR_{stepDR}/TransitionEps'
-data_dir = f'/home/surgic-ai/SurgicAI/RL/Approach_td3/vis_dr/TransitionEps'
-#model_save_dir = f'/home/exie3/SurgicAI/IL_Models/{task_name}/R3m_{view_name}/visDR_{visDR}_stepDR_{stepDR}/Model'
-model_save_dir = f'/home/surgic-ai/SurgicAI/Image_IL/Approach/vis_dr/Model'
+
+# Resolve repo-local paths (no hardcoded /home/...).
+_REPO_ROOT = Path(os.environ.get("SURGICAI_ROOT", Path(__file__).resolve().parents[1])).expanduser().resolve()
+_RL_DIR = _REPO_ROOT / "RL"
+
+# Data location can be overridden externally.
+_IL_DATA_DIR = Path(os.environ.get("SURGICAI_IL_DATA_DIR", "")).expanduser().resolve() if os.environ.get("SURGICAI_IL_DATA_DIR") else None
+data_dir = str(_IL_DATA_DIR / task_name) if _IL_DATA_DIR is not None else str(_RL_DIR / f"{task_name}_td3" / "vis_dr" / "TransitionEps")
+
+# Model outputs live under the repo by default; override with SURGICAI_IL_OUT_DIR.
+_IL_OUT_DIR = Path(os.environ.get("SURGICAI_IL_OUT_DIR", "")).expanduser().resolve() if os.environ.get("SURGICAI_IL_OUT_DIR") else (_REPO_ROOT / "Image_IL")
+model_save_dir = str(_IL_OUT_DIR / task_name / "vis_dr" / "Model")
 
 os.makedirs(model_save_dir, exist_ok=True)
 
@@ -105,7 +128,9 @@ criterion = nn.MSELoss()
 optimizer = torch.optim.Adam(bc_model.parameters(), lr=0.0001)
 
 wandb.init(project="behavior_cloning_v2", name=f"{task_name}_{view_name}_view")
-wandb.config.update(args)
+if args.use_wandb:
+    wandb.init(project=args.wandb_project, name=(args.wandb_name or f"{task_name}_{view_name}_view"))
+    wandb.config.update(vars(args))
 
 def train_and_evaluate(model, train_loader, test_loader, criterion, optimizer, num_epochs, checkpoint_interval):
     for epoch in range(num_epochs):
@@ -121,7 +146,8 @@ def train_and_evaluate(model, train_loader, test_loader, criterion, optimizer, n
             total_train_loss += loss.item()
         
         avg_train_loss = total_train_loss / len(train_loader)
-        wandb.log({"Train Loss": avg_train_loss}, step=epoch)
+        if args.use_wandb:
+            wandb.log({"Train Loss": avg_train_loss}, step=epoch)
         
         model.eval()
         total_test_loss = 0
@@ -132,18 +158,20 @@ def train_and_evaluate(model, train_loader, test_loader, criterion, optimizer, n
                 loss = criterion(outputs, actions)
                 total_test_loss += loss.item()
             avg_test_loss = total_test_loss / len(test_loader)
-            wandb.log({"Test Loss": avg_test_loss}, step=epoch)
-            print(f'Epoch {epoch+1}, Train Loss: {avg_train_loss:.4f}, Test Loss: {avg_test_loss:.4f}')
+            if args.use_wandb:
+                wandb.log({"Test Loss": avg_test_loss}, step=epoch)
+            logger.info("Epoch %s: train=%0.4f test=%0.4f", epoch + 1, avg_train_loss, avg_test_loss)
 
         if (epoch + 1) % checkpoint_interval == 0 or (epoch + 1) == num_epochs:
             torch.save(model.state_dict(), os.path.join(model_save_dir, f'model_epoch_{epoch+1}.pth'))
-            print(f'Model saved at epoch {epoch+1}')
+            logger.info("Saved model checkpoint at epoch %s", epoch + 1)
 
     torch.save(model.state_dict(), os.path.join(model_save_dir, 'model_final.pth'))
-    print('Final model saved')
+    logger.info("Final model saved")
 
 num_epochs = 40
 checkpoint_interval = 20
 train_and_evaluate(bc_model, train_loader, test_loader, criterion, optimizer, num_epochs, checkpoint_interval)
 
-wandb.finish()
+if args.use_wandb:
+    wandb.finish()

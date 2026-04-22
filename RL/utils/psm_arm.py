@@ -5,10 +5,10 @@ from threading import Thread, Lock, RLock
 from ambf_msgs.msg import RigidBodyCmd, RigidBodyState, ActuatorCmd, GhostObjectState
 from geometry_msgs.msg import Pose
 from PyKDL import Vector, Frame, Rotation
-from utils.kinematics.kinematics import PSMKinematicSolver
-from utils.kinematics.DH import enforce_limits
-from utils.utils import convert_mat_to_frame
-from utils.interpolation import Interpolation
+from RL.utils.kinematics.kinematics import PSMKinematicSolver
+from RL.utils.kinematics.DH import enforce_limits
+from RL.utils.utils import convert_mat_to_frame
+from RL.utils.interpolation import Interpolation
 from transforms3d.euler import quat2euler
 
 _psm_global_compute_lock = RLock()

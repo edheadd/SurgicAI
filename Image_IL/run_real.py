@@ -12,9 +12,10 @@ from r3m import load_r3m
 import os
 import sys
 from PyKDL import Vector, Frame, Rotation
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../RL"))
-from utils.real_psm_arm import PSM
-from utils.utils import convert_mat_to_vector
+from pathlib import Path
+
+from RL.utils.real_psm_arm import PSM
+from RL.utils.utils import convert_mat_to_vector
 
 task_name = "Approach"
 view_name = "front"
@@ -103,7 +104,9 @@ def wait_for_images():
     for key in image_received:
         image_received[key] = False
 
-model_path = f'/home/xsun97/SurgicAI/Image_IL/Approach/vis_dr/Model/model_final.pth'
+_REPO_ROOT = Path(os.environ.get("SURGICAI_ROOT", Path(__file__).resolve().parents[1])).expanduser().resolve()
+_IL_OUT_DIR = Path(os.environ.get("SURGICAI_IL_OUT_DIR", "")).expanduser().resolve() if os.environ.get("SURGICAI_IL_OUT_DIR") else (_REPO_ROOT / "Image_IL")
+model_path = str(_IL_OUT_DIR / task_name / "vis_dr" / "Model" / "model_final.pth")
 model = load_r3m_model(model_path, r3m_model)
 
 trans_step = 1.0e-3

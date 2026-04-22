@@ -1,11 +1,11 @@
 import time
 import gymnasium as gym
 import numpy as np
-from utils import scene_manager
+from RL.utils import scene_manager
 from ros_abstraction_layer import ral
-from utils.gym_manager import GymManager
-from utils.scene_manager import SceneManager
-from utils.utils import convert_mat_to_frame, frame_to_vector, vector_to_frame
+from RL.utils.gym_manager import GymManager
+from RL.utils.scene_manager import SceneManager
+from RL.utils.utils import convert_mat_to_frame, frame_to_vector, vector_to_frame
 
 class SRC_subtask(gym.Env):
     """Custom Environment that follows gym interface"""
@@ -155,7 +155,7 @@ class SRC_subtask(gym.Env):
             rewards = -(distances_trans/100 + distances_angle/10)
         else:  # sparse
             rewards = np.where(
-                (distances_trans <= self.env.threshold_trans) & (distances_angle <= self.env.threshold_angle),
+                (distances_trans <= self.threshold_trans) & (distances_angle <= self.threshold_angle),
                 0, -1
             )
         return np.asarray(rewards[0])
@@ -165,12 +165,13 @@ class SRC_subtask(gym.Env):
         """
         Decide whether success criteria (Distance is lower than a threshold) is met.
         """
-        achieved_goal = self.env.obs["achieved_goal"]
-        desired_goal = self.env.obs["desired_goal"]
+        # `self.obs` is the latest observation dict produced by `GymManager`.
+        achieved_goal = self.obs["achieved_goal"]
+        desired_goal = self.obs["desired_goal"]
         distances_trans = np.linalg.norm(achieved_goal[0:3] - desired_goal[0:3])
         distances_angle = np.linalg.norm(achieved_goal[3:6] - desired_goal[3:6])
         print(f"Distance to goal - Translation: {distances_trans:.4f} cm, Rotation: {np.rad2deg(distances_angle):.2f} degrees")
-        if (distances_trans<= self.env.threshold_trans) and (distances_angle <= self.env.threshold_angle):
+        if (distances_trans<= self.threshold_trans) and (distances_angle <= self.threshold_angle):
             return True
         else:
             return False

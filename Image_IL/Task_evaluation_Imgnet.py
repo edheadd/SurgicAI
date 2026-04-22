@@ -1,6 +1,9 @@
 import sys
-path_to_add = '/home/jin/SRC-gym/gym-env/Hierachical_Learning_v2'
-sys.path.append(path_to_add)
+import os
+from pathlib import Path
+
+# Resolve repo root for data/model paths.
+_REPO_ROOT = Path(os.environ.get("SURGICAI_ROOT", Path(__file__).resolve().parents[1])).expanduser().resolve()
 
 import torch
 import torch.nn as nn
@@ -16,7 +19,6 @@ import gymnasium as gym
 from stable_baselines3.common.utils import set_random_seed
 import time
 import argparse
-import os
 import importlib
 
 parser = argparse.ArgumentParser(description='Behavior Cloning Testing')
@@ -119,7 +121,8 @@ def wait_for_images():
     for key in image_received:
         image_received[key] = False
 
-model_path = f'/home/jwu220/Trajectory_cloud/IL_model_v2/{task_name}/Imgnet_{view_name}_view/Model/model_final.pth'
+_IL_OUT_DIR = Path(os.environ.get("SURGICAI_IL_OUT_DIR", "")).expanduser().resolve() if os.environ.get("SURGICAI_IL_OUT_DIR") else (_REPO_ROOT / "Image_IL")
+model_path = str(_IL_OUT_DIR / task_name / f"Imgnet_{view_name}_view" / "Model" / "model_final.pth")
 model = load_resnet_model(model_path, resnet_model)
 
 seed = 60
@@ -196,7 +199,7 @@ print(f"Success Rate: {mean_success_rate:.2%} ± {std_success_rate:.2%}")
 print(f"Average Trajectory Length: {mean_avg_length:.2f} ± {std_avg_length:.2f} mm")
 print(f"Average Time Cost: {mean_avg_timecost:.2f} ± {std_avg_timecost:.2f} steps")
 
-results_dir = f"/home/jwu220/Trajectory_cloud/IL_model_v2/{task_name}/Imgnet_{view_name}_view/Results"
+results_dir = str(_IL_OUT_DIR / task_name / f"Imgnet_{view_name}_view" / "Results")
 os.makedirs(results_dir, exist_ok=True)
 results_file = os.path.join(results_dir, f"{task_name}_{view_name}_results.txt")
 

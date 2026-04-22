@@ -25,6 +25,17 @@ pip install stable-baselines3 d3rlpy
 ## RL Training
 This section introduce the basic procedure for model training with defined Gymnasium environment.
 
+### Environment variables (recommended)
+Many scripts default to repo-relative paths, but you can override artifact locations via:
+
+- `SURGICAI_ROOT`: repo root (only needed if running scripts from outside the repo)
+- `SURGICAI_DATA_DIR`: base directory for RL experiment outputs (checkpoints, final models)
+- `SURGICAI_IL_DATA_DIR`: base directory for Image-IL training datasets
+- `SURGICAI_IL_OUT_DIR`: base directory for Image-IL outputs (models/results)
+- `SURGICAI_POLICY_DIR`: directory containing pretrained low-level `.zip` policies (used by `RL/Low_env_init.py`)
+- `SURGICAI_ENV_INFO_DIR`: directory containing env info txt files (defaults to `RL/Env_info/`)
+- `SURGICAI_APPROACH_VISDR_DIR`: directory for vis-DR image/transition recording outputs (defaults under `SURGICAI_DATA_DIR`)
+
 ### Run the SRC Environment
 Make sure ROS and SRC is running before moving forward to the following steps. You can simply run the following command or refer to this [link](https://github.com/surgical-robotics-ai/surgical_robotics_challenge) for details.
 
@@ -104,6 +115,10 @@ The command evaluates the success rate, trajectory length, and time steps across
 ```python
 python3 Model_evaluation.py --algorithm "$algorithm" --task_name "$task" --reward_type "$REWARD_TYPE" --trans_error "$TRANS_ERROR" --angle_error "$ANGLE_ERROR" --eval_seed "$EVAL_SEED"
 ```
+
+### Logging and reproducibility
+- Most scripts now accept `--log-level`, `--log-file`, and use a shared seeding utility.
+- Image-IL training scripts accept `--seed` and `--use_wandb` (wandb is off by default).
 
 ### High-level Training
 See in [High_level_HLP.ipynb](./RL/High_level_HLP.ipynb) for more details.

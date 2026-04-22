@@ -28,13 +28,21 @@ class GymManager:
                 high=np.array([np.inf]*7, dtype=np.float32),
                 shape=(7,), dtype=np.float32),
             "desired_goal": spaces.Box(
-                low=np.array([-np.inf]*7, dtype=np.actionactionfloat32),
+                low=np.array([-np.inf]*7, dtype=np.float32),
                 high=np.array([np.inf]*7, dtype=np.float32),
                 shape=(7,), dtype=np.float32)              
         })
         
     def update_observation(self, current):
-        """Update the environment observation"""
+        """
+        Build a GoalEnv-style observation dict and compute reward/termination.
+
+        The env is expected to provide:
+        - `goal_obs`: desired goal vector (len 7)
+        - `compute_reward(achieved, desired, info=None)`
+        - `criteria()`: returns True when success condition is met
+        - `timestep`, `max_timestep`
+        """
         goal_obs = self.env.goal_obs
         current = np.array(current, dtype=np.float32)
         goal_obs = np.array(goal_obs, dtype=np.float32)
@@ -47,8 +55,6 @@ class GymManager:
         }
         
         self.env.obs = self.normalize_observation(obs_dict)
-        self.reward = self.env.compute_reward(self.env.obs["achieved_goal"], self.env.obs["desired_goal"])
-        self.terminate = self.env.criteria()
         self.reward = self.env.compute_reward(self.env.obs["achieved_goal"], self.env.obs["desired_goal"])
         self.terminate = self.env.criteria()
         self.truncate = self.env.timestep >= self.env.max_timestep

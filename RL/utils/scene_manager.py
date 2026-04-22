@@ -1,12 +1,12 @@
 import time
 import numpy as np
 from PyKDL import Frame, Rotation, Vector
-from utils.utils import convert_mat_to_frame
-from utils.psm_arm import PSM
-from utils.ecm_arm import ECM
-from utils.scene import Scene
-from utils.needle import Needle
-from utils.world_manager import WorldManager
+from RL.utils.utils import convert_mat_to_frame
+from RL.utils.psm_arm import PSM
+from RL.utils.ecm_arm import ECM
+from RL.utils.scene import Scene
+from RL.utils.needle import Needle
+from RL.utils.world_manager import WorldManager
 
 
 class SceneManager:
