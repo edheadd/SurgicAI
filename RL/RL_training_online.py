@@ -59,7 +59,7 @@ def create_model(args, env, expert_data):
 
 def setup_environment(args):
     max_episode_steps = 1000
-    step_size = default_step_size(trans_step=1.0e-3, angle_step_deg=3.0, jaw_step=0.05)
+    step_size = default_step_size(trans_step=2.0e-3, angle_step_deg=3.0, jaw_step=0.05)
     threshold = threshold_from_args(args.trans_error, args.angle_error)
     SRC_class = resolve_src_env(args.task_name)
     
@@ -72,8 +72,8 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description="Train a reinforcement learning agent.")
     parser.add_argument('--algorithm', type=str, required=True, help='Name of the RL algorithm to use')
     parser.add_argument('--task_name', type=str, required=True, help='Name of the task/environment')
-    parser.add_argument('--reward_type', type=str, choices=['dense', 'sparse'], default='sparse', help='Reward type')
-    parser.add_argument('--total_timesteps', type=int, default=500000, help='Total timesteps for training')
+    parser.add_argument('--reward_type', type=str, choices=['dense', 'sparse'], default='dense', help='Reward type')
+    parser.add_argument('--total_timesteps', type=int, default=150000, help='Total timesteps for training')
     parser.add_argument('--save_freq', type=int, default=50000, help='Frequency of saving checkpoints')
     add_seed_arg(parser, name="--seed", default=10)
     add_threshold_args(parser)

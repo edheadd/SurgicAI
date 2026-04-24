@@ -78,7 +78,7 @@ class SceneManager:
         self.psm_step(self.psm_goal_list[0], 1)
         self.psm_step(self.psm_goal_list[1], 2)
         time.sleep(0.5)
-        #self.randomize_psm_pos()
+        self.randomize_psm_pos()
 
         self.world_manager.reset()        
         self.camera_view_reset(True)
@@ -88,7 +88,7 @@ class SceneManager:
         time.sleep(1.0)
 
     def randomize_psm_pos(self):
-        psm_random_range = np.array([0.005,  0.005, 0.005, 0.5, 0.5, 0.5, 0.3],dtype=np.float32)
+        psm_random_range = np.array([0.01,  0.01, 0.01, 0, 0, 0, 0.3],dtype=np.float32)
         # add random offsets in [-range, +range] for each DOF
         noise0 = np.random.uniform(-psm_random_range, psm_random_range).astype(np.float32)
         noise1 = np.random.uniform(-psm_random_range, psm_random_range).astype(np.float32)

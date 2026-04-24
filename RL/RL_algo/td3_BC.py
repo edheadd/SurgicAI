@@ -158,11 +158,6 @@ class TD3_BC(OffPolicyAlgorithm):
                     # Compute the next Q-values: min over all critics targets
                     next_q_values = th.cat(self.critic_target(replay_data.next_observations, next_actions), dim=1)
                     next_q_values, _ = th.min(next_q_values, dim=1, keepdim=True)
-                                        
-                     # Temporary Debugging
-                    print(f"DEBUG: rewards shape: {replay_data.rewards.shape}")
-                    print(f"DEBUG: dones shape: {replay_data.dones.shape}")
-                    print(f"DEBUG: next_q_values shape: {next_q_values.shape}")
                     
                     target_q_values = replay_data.rewards + (1 - replay_data.dones) * self.gamma * next_q_values
 

@@ -1,5 +1,3 @@
-# Training environment for approaching stage for (DDPG+HER)
-
 import numpy as np
 from RL.subtask_env import SRC_subtask
 
