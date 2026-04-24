@@ -25,11 +25,11 @@ pip install stable-baselines3[extra] d3rlpy
 ## Supported Tasks
 SurgicAI supports five fine-grained surgical tasks for benchmarking policy learning. More tasks can be easily defined and added to the pipeline.
 
--Approach: Moving the tool to the proximity of the target.
--Place: Precisely positioning the needle at the entry point.
--Insert: Driving the needle through the simulated tissue.
--Handoff: Transferring the needle from one surgical tool to another.
--Pullout: Extracting the needle from the tissue exit point.
+- Approach: Moving the tool to the proximity of the target.
+- Place: Precisely positioning the needle at the entry point.
+- Insert: Driving the needle through the simulated tissue.
+- Handoff: Transferring the needle from one surgical tool to another.
+- Pullout: Extracting the needle from the tissue exit point.
 
 ## Reinforcement Learning (RL) Training
 This section introduce the basic procedure for model training with defined Gymnasium environment.
