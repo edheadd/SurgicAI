@@ -59,7 +59,7 @@ def create_model(args, env, expert_data):
 
 def setup_environment(args):
     max_episode_steps = 1000
-    step_size = default_step_size(trans_step=2.0e-3, angle_step_deg=3.0, jaw_step=0.05)
+    step_size = default_step_size(trans_step=1.5e-3, angle_step_deg=3.0, jaw_step=0.05)
     threshold = threshold_from_args(args.trans_error, args.angle_error)
     SRC_class = resolve_src_env(args.task_name)
     

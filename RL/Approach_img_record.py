@@ -27,7 +27,7 @@ current_images = {}
 image_received = {}
 bridge = CvBridge()
 
-ral_instance = ral("image_record_node")
+ral_instance = ral("image_record_node") 
 ral_instance.spin()  # Start RAL spinning to process callbacks
 time.sleep(0.5)  # Allow some time for RAL to initialize
 
@@ -133,7 +133,7 @@ seed_everything(seed)
 
 max_episode_steps = 500
 
-trans_step = 1.0e-3
+trans_step = 1.5e-3
 angle_step = np.deg2rad(3)
 jaw_step = 0.3
 step_size = np.array([trans_step, trans_step, trans_step, angle_step, angle_step, angle_step, jaw_step], dtype=np.float32)

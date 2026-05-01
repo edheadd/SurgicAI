@@ -121,10 +121,6 @@ The following video demonstrates the complete suturing procedure by our training
 
 [demo](https://github.com/surgical-robotics-ai/SurgicAI/assets/147576462/1927a1cf-096f-444d-a878-6c0f96b152d4)
 
-Here's some progress demonstrating our pipeline's transition to the latest SRC, focusing on the low-level task: 'Place'.
-
-[New_SRC_demo](https://github.com/user-attachments/assets/faf0d821-2b6c-4524-be26-565dc2f4a600)
-
 If you find our work userful, please cite it as:
 ```bibtex
 @misc{wu2024surgicaifinegrainedplatformdata,

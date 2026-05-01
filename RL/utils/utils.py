@@ -130,6 +130,36 @@ def convert_mat_to_vector(mat):
     frame = convert_mat_to_frame(mat)
     return frame_to_vector(frame)
 
+
+def gripper_T_c(scene_manager, psm_idx):
+    """Measured gripper pose expressed in camera frame."""
+    psm = scene_manager.psm_list[psm_idx - 1]
+    T_g_b = convert_mat_to_frame(psm.measured_cp())
+    T_g_w = psm.get_T_b_w() * T_g_b
+    T_w_c = scene_manager.ecm.get_T_w_c()
+    return T_w_c * T_g_w
+
+
+def goal_vec7_c_from_goal_vec7_b(goal_vec7_b, psm_idx, scene_manager):
+    """Convert desired goal from PSM base frame to camera frame."""
+    psm = scene_manager.psm_list[psm_idx - 1]
+    T_goal_b = vector_to_frame(goal_vec7_b)
+    T_goal_w = psm.get_T_b_w() * T_goal_b
+    T_w_c = scene_manager.ecm.get_T_w_c()
+    goal_vec6_c = frame_to_vector(T_w_c * T_goal_w)
+    return np.append(goal_vec6_c, float(np.asarray(goal_vec7_b)[6]))
+
+
+def goal_vec7_b_from_goal_vec7_c(goal_vec7_c, psm_idx, scene_manager):
+    """Convert desired goal from camera frame to PSM base frame (for commanding)."""
+    psm = scene_manager.psm_list[psm_idx - 1]
+    T_goal_c = vector_to_frame(goal_vec7_c)
+    T_c_w = scene_manager.ecm.get_T_c_w()
+    T_goal_w = T_c_w * T_goal_c
+    T_goal_b = psm.get_T_w_b() * T_goal_w
+    goal_vec6_b = frame_to_vector(T_goal_b)
+    return np.append(goal_vec6_b, float(np.asarray(goal_vec7_c)[6]))
+
 def get_angle(vec_a, vec_b, up_vector=None):
     vec_a.Normalize()
     vec_b.Normalize()

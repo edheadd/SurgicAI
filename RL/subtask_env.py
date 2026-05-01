@@ -1,11 +1,17 @@
 import time
 import gymnasium as gym
 import numpy as np
-from RL.utils import scene_manager
 from ros_abstraction_layer import ral
 from RL.utils.gym_manager import GymManager
 from RL.utils.scene_manager import SceneManager
-from RL.utils.utils import convert_mat_to_frame, frame_to_vector, vector_to_frame
+from RL.utils.utils import (
+    convert_mat_to_frame,
+    frame_to_vector,
+    vector_to_frame,
+    gripper_T_c,
+    goal_vec7_b_from_goal_vec7_c,
+    goal_vec7_c_from_goal_vec7_b,
+)
 
 class SRC_subtask(gym.Env):
     """Custom Environment that follows gym interface"""
@@ -61,37 +67,6 @@ class SRC_subtask(gym.Env):
         self.np_random, seed = gym.utils.seeding.np_random(seed)
         np.random.seed(seed)
 
-    def _frame_to_vec6(self, frame):
-        """Convert PyKDL.Frame to [x,y,z,roll,pitch,yaw]."""
-        return frame_to_vector(frame)
-
-    def _gripper_T_c(self, psm_idx):
-        """Measured gripper pose expressed in camera frame."""
-        psm = self.scene_manager.psm_list[psm_idx - 1]
-        T_g_b = convert_mat_to_frame(psm.measured_cp())
-        T_g_w = psm.get_T_b_w() * T_g_b
-        T_w_c = self.scene_manager.ecm.get_T_w_c()
-        return T_w_c * T_g_w
-
-    def _goal_vec7_c_from_goal_vec7_b(self, goal_vec7_b, psm_idx):
-        """Convert desired goal from PSM base frame to camera frame."""
-        psm = self.scene_manager.psm_list[psm_idx - 1]
-        T_goal_b = vector_to_frame(goal_vec7_b)
-        T_goal_w = psm.get_T_b_w() * T_goal_b
-        T_w_c = self.scene_manager.ecm.get_T_w_c()
-        goal_vec6_c = self._frame_to_vec6(T_w_c * T_goal_w)
-        return np.append(goal_vec6_c, float(np.asarray(goal_vec7_b)[6]))
-
-    def _goal_vec7_b_from_goal_vec7_c(self, goal_vec7_c, psm_idx):
-        """Convert desired goal from camera frame to PSM base frame (for commanding)."""
-        psm = self.scene_manager.psm_list[psm_idx - 1]
-        T_goal_c = vector_to_frame(goal_vec7_c)
-        T_c_w = self.scene_manager.ecm.get_T_c_w()
-        T_goal_w = T_c_w * T_goal_c
-        T_goal_b = psm.get_T_w_b() * T_goal_w
-        goal_vec6_b = self._frame_to_vec6(T_goal_b)
-        return np.append(goal_vec6_b, float(np.asarray(goal_vec7_c)[6]))
-
     def step(self, action):
         """
         Step function, defines the system dynamic and updates the observation
@@ -101,8 +76,8 @@ class SRC_subtask(gym.Env):
         # Only update goal if action is non-zero
         if np.any(action != 0):
             # Work in camera frame for RL: current measured gripper pose in camera coordinates
-            T_g_c = self._gripper_T_c(self.psm_idx)
-            current_obs_c = self._frame_to_vec6(T_g_c)
+            T_g_c = gripper_T_c(self.scene_manager, self.psm_idx)
+            current_obs_c = frame_to_vector(T_g_c)
             current_jaw = self.scene_manager.psm_list[self.psm_idx - 1].get_jaw_angle()
             goal_vector_c = np.append(current_obs_c, current_jaw)
             
@@ -117,19 +92,19 @@ class SRC_subtask(gym.Env):
             goal_vector_c = goal_vector_c + action_step
             
             # Convert commanded goal back to PSM base frame (SceneManager expects base frame)
-            goal_vector_b = self._goal_vec7_b_from_goal_vec7_c(goal_vector_c, self.psm_idx)
+            goal_vector_b = goal_vec7_b_from_goal_vec7_c(goal_vector_c, self.psm_idx, self.scene_manager)
             self.scene_manager.psm_goal_list[self.psm_idx - 1] = goal_vector_b
         
         # Step and update observation
         self.scene_manager.step()
 
         # Emit observation in camera frame (both achieved and desired)
-        achieved_vec7_c = np.append(self._frame_to_vec6(self._gripper_T_c(self.psm_idx)),
+        achieved_vec7_c = np.append(frame_to_vector(gripper_T_c(self.scene_manager, self.psm_idx)),
                                     float(self.scene_manager.psm_list[self.psm_idx - 1].get_jaw_angle()))
 
         # Gym reads desired_goal from env.goal_obs; keep it in camera frame for this env.
         if self.goal_obs is not None:
-            self.goal_obs = self._goal_vec7_c_from_goal_vec7_b(self.goal_obs, self.psm_idx)
+            self.goal_obs = goal_vec7_c_from_goal_vec7_b(self.goal_obs, self.psm_idx, self.scene_manager)
 
         return self.gym_manager.update_observation(achieved_vec7_c)
 
