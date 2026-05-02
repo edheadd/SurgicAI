@@ -16,6 +16,13 @@ from ros_abstraction_layer import ral
 from PyKDL import Frame, Rotation, Vector
 from stable_baselines3 import TD3, SAC, PPO
 
+try:
+    import gymnasium as gym
+    from gymnasium import spaces
+except ImportError:
+    import gym
+    from gym import spaces
+
 gc.collect()
 torch.cuda.empty_cache()
 logger = get_logger(__name__)
@@ -30,6 +37,45 @@ def parse_arguments():
     parser.add_argument('--goal', type=float, nargs=7, default=None, help='Desired goal [x,y,z,roll,pitch,yaw,jaw] in camera frame')
     parser.add_argument('--max-steps', type=int, default=100, help='Max deployment steps')
     return parser.parse_args()
+
+
+class DummyDeployEnv(gym.Env):
+    """
+    Minimal dummy env required only for loading SB3 HER/Dict-observation models.
+    Real deployment still uses deploy_loop() and PSM directly.
+    """
+    def __init__(self):
+        super().__init__()
+        self.observation_space = spaces.Dict({
+            "achieved_goal": spaces.Box(-np.inf, np.inf, shape=(7,), dtype=np.float32),
+            "desired_goal": spaces.Box(-np.inf, np.inf, shape=(7,), dtype=np.float32),
+            "observation": spaces.Box(-np.inf, np.inf, shape=(21,), dtype=np.float32),
+        })
+        self.action_space = spaces.Box(-1.0, 1.0, shape=(7,), dtype=np.float32)
+
+    def reset(self, seed=None, options=None):
+        obs = {
+            "achieved_goal": np.zeros(7, dtype=np.float32),
+            "desired_goal": np.zeros(7, dtype=np.float32),
+            "observation": np.zeros(21, dtype=np.float32),
+        }
+        return obs, {}
+
+    def step(self, action):
+        obs = {
+            "achieved_goal": np.zeros(7, dtype=np.float32),
+            "desired_goal": np.zeros(7, dtype=np.float32),
+            "observation": np.zeros(21, dtype=np.float32),
+        }
+        reward = 0.0
+        terminated = False
+        truncated = False
+        info = {}
+        return obs, reward, terminated, truncated, info
+
+    def compute_reward(self, achieved_goal, desired_goal, info):
+        return -np.linalg.norm(achieved_goal[..., :3] - desired_goal[..., :3], axis=-1).astype(np.float32)
+
 
 def load_model_for_deploy(algorithm, task_name, reward_type, seed, model_path: str | None):
     if model_path is not None:
@@ -53,7 +99,15 @@ def load_model_for_deploy(algorithm, task_name, reward_type, seed, model_path: s
         model_class = PPO
     else:
         raise ValueError(f"Unsupported algorithm: {algorithm}")
-    model = model_class.load(str(resolved_model_path))
+    dummy_env = DummyDeployEnv()
+    model = model_class.load(
+        str(resolved_model_path),
+        env=dummy_env,
+        custom_objects={
+            "lr_schedule": lambda _: 0.0,
+            "clip_range": lambda _: 0.0,
+        },
+    )
     return model
 
 def deploy_loop(model, psm, step_size, max_steps=100, goal_vec7=None):
